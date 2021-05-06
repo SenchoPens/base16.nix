@@ -3,20 +3,20 @@ with lib;
 let
   getScheme = { base00, base01, base02, base03, base04, base05, base06, base07
     , base08, base09, base0A, base0B, base0C, base0D, base0E, base0F, ... }@numbered:
-    rec {
-      numberedList = [ base00 base01 base02 base03 base04 base05 base06 base07 base08 base09 base0A base0B base0C base0D base0E base0F ];
+  rec {
+    numberedList = [ base00 base01 base02 base03 base04 base05 base06 base07 base08 base09 base0A base0B base0C base0D base0E base0F ];
 
-      inherit numbered;
-      numberedHashtag = builtins.mapAttrs (_: v: "#" + v) numbered;
-      numberedDec = builtins.mapAttrs (name: color: colorHex2Dec color) numbered;
+    inherit numbered;
+    numberedHashtag = builtins.mapAttrs (_: v: "#" + v) numbered;
+    numberedDec = builtins.mapAttrs (name: color: colorHex2Dec color) numbered;
 
-      named = getNamed numbered;
-      namedHashtag = getNamed numberedHashtag;
-      namedDec = getNamed numberedDec;
-    };
+    named = getNamed numbered;
+    namedHashtag = getNamed numberedHashtag;
+    namedDec = getNamed numberedDec;
+  };
 
   getNamed = { base00, base01, base02, base03, base04, base05, base06, base07
-    , base08, base09, base0A, base0B, base0C, base0D, base0E, base0F, ... }: {
+      , base08, base09, base0A, base0B, base0C, base0D, base0E, base0F, ... }: {
     bg = base00;
     dark = base01;
 
@@ -46,9 +46,9 @@ let
       buildPhase = "echo '${yaml}' | ${pkgs.yaml2json}/bin/yaml2json > $out";
     }));
 
-  fromYAMLPath = path-to-yaml: fromYAML (builtins.readFile path-to-yaml)
+  fromYAMLPath = path-to-yaml: fromYAML (builtins.readFile path-to-yaml);
 
-  getSchemeFromYAMLPath = path-to-yaml: getScheme (fromYAMLPath path-to-yaml)
+  getSchemeFromYAMLPath = path-to-yaml: getScheme (fromYAMLPath path-to-yaml);
 
   hex2int = s: with builtins; if s == "" then 0 else let l = stringLength s - 1; in 
     (hex2decDigits."${substring l 1 s}" + 16 * (hex2int (substring 0 l s)));
@@ -79,7 +79,7 @@ let
       --template ${template} \
       --brightness ${brightness} \
       > $out
-    '')
+    '');
 
 in {
   inherit
