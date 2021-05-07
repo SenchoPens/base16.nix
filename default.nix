@@ -81,11 +81,14 @@ let
       > $out
     '';
 
-in {
-  inherit
-    buildTheme
-    fromYAML
-    fromYAMLPath
-    getScheme
-    getSchemeFromYAMLPath
-}
+  lib = {
+    inherit
+      buildTheme
+      fromYAML
+      fromYAMLPath
+      getScheme
+      getSchemeFromYAMLPath
+      ;
+  };
+in
+lib
