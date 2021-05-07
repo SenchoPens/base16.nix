@@ -1,4 +1,4 @@
-{ lib, pkgs, inputs, ... }:
+{ lib, pkgs, ... }:
 with lib;
 let
   getScheme = { base00, base01, base02, base03, base04, base05, base06, base07
