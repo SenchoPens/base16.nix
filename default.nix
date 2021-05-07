@@ -79,7 +79,7 @@ let
       --template ${template} \
       --brightness ${brightness} \
       > $out
-    '');
+    '';
 
 in {
   inherit
