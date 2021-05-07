@@ -90,4 +90,4 @@ in
     getScheme
     getSchemeFromYAMLPath
     ;
-};
+}
