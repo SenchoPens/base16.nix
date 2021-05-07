@@ -6,6 +6,6 @@
   };
 
   outputs = { self, nixpkgs }: {
-    lib = (import ./.) { lib = nixpkgs.lib; pkgs = nixpkgs; };
+    lib = (import ./.) { lib = nixpkgs.lib; pkgs = nixpkgs.pkgs; };
   };
 }
