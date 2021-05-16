@@ -48,7 +48,7 @@ let
       };
     };
 in {
-  options.base16.schemes = {
+  options.base16.schemes = mkOption {
     description = "Attribute set of schemes";
     type = types.attrsOf schemeType;
   };
