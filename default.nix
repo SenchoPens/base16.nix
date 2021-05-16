@@ -2,19 +2,27 @@
 with lib;
 let
   getScheme = { base00, base01, base02, base03, base04, base05, base06, base07
-    , base08, base09, base0A, base0B, base0C, base0D, base0E, base0F, ... }@numbered:
+    , base08, base09, base0A, base0B, base0C, base0D, base0E, base0F, ... }@original:
   rec {
-    numbered = [ base00 base01 base02 base03 base04 base05 base06 base07 base08 base09 base0A base0B base0C base0D base0E base0F ];
-    numberedHashtag = builtins.mapAttrs (_: v: "#" + v) numbered;
-    numberedDec = builtins.mapAttrs (name: color: colorHex2Dec color) numbered;
+    inherit original;
+    originalHashtag = builtins.mapAttrs (_: v: "#" + v) original;
+    originalDec = builtins.mapAttrs (name: color: colorHex2Dec color) original;
 
-    named = getNamed numbered;
-    namedHashtag = getNamed numberedHashtag;
-    namedDec = getNamed numberedDec;
+    listed = schemeToList original;
+    listedHashtag = schemeToList originalHashtag;
+    listedDec = schemeToList originalDec;
+
+    named = getNamed original;
+    namedHashtag = getNamed originalHashtag;
+    namedDec = getNamed originalDec;
   };
 
+  schemeToList = { base00, base01, base02, base03, base04, base05, base06, base07
+      , base08, base09, base0A, base0B, base0C, base0D, base0E, base0F, ... }:
+    return [ base00 base01 base02 base03 base04 base05 base06 base07 base08 base09 base0A base0B base0C base0D base0E base0F ];
+
   getNamed = { base00, base01, base02, base03, base04, base05, base06, base07
-      , base08, base09, base0A, base0B, base0C, base0D, base0E, base0F, ... }: {
+      , base08, base09, base0A, base0B, base0C, base0D, base0E, base0F }: {
     bg = base00;
     dark = base01;
 

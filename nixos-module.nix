@@ -10,39 +10,57 @@ let
   schemeType =
     types.submodule {
       options = rec {
+        original = mkOption {
+          description =
+            "Attribute set with keys and values in format of 'base0X' and 'rrggbb'";
+          type = types.listOf colorType;
+        };
+
+        originalHashtag = mkOption {
+          description =
+            "Attribute set with keys and values in format of 'base0X' and '#rrggbb'";
+          type = types.listOf colorType;
+        };
+
+        originalDec = mkOption {
+          description =
+            "Attribute set with keys and values in format of 'base0X' and 'r,g,b', where e.g. r is decimal form of '#rr'";
+          type = types.listOf colorType;
+        };
+
         numbered = mkOption {
           description =
-            "List of base16 colors in order 00, 01, ..., 0F in format of 'rrggbb'";
+            "Same as original, but as a list in order of base00, base01, ..., base0F";
           type = types.listOf colorType;
         };
 
         numberedHashtag = mkOption {
           description =
-            "List of base16 colors in order 00, 01, ..., 0F in format of '#rrggbb'";
+            "Same as originalHashtag, but as a list in order of base00, base01, ..., base0F";
           type = types.listOf colorType;
         };
 
         numberedDec = mkOption {
           description =
-            "List of base16 colors in order 00, 01, ..., 0F in format of 'r,g,b', e.g. r is decimal form of '#rr'";
+            "Same as originalDec, but as a list in order of base00, base01, ..., base0F";
           type = types.listOf colorType;
         };
 
         named = mkOption {
           description =
-            "Same as 'numbered', but as an attrset, where keys are semantic color names, e.g. 'blue' refers to base0D";
+            "Same as 'original', but keys are renamed to colors they usually are, e.g. 'base0D' -> 'blue'";
           type = types.attrsOf colorType;
         };
 
         namedHashtag = mkOption {
           description =
-            "Same as 'numberedHashtag', but as an attrset";
+            "Same as 'originalHashtag', but keys are renamed to colors they usually are, e.g. 'base0D' -> 'blue'";
           type = types.attrsOf colorType;
         };
 
         namedDec = mkOption {
           description =
-            "Same as 'numberedDec', but as an attrset";
+            "Same as 'originalDec', but keys are renamed to colors they usually are, e.g. 'base0D' -> 'blue'";
           type = types.attrsOf colorType;
         };
       };
