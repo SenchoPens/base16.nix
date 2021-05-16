@@ -7,9 +7,8 @@ let
 
   colorType = types.str;
 
-  schemeType = mkOption {
-    description = "A scheme";
-    type = types.submodule {
+  schemeType =
+    types.submodule {
       options = rec {
         numbered = mkOption {
           description =
@@ -48,7 +47,6 @@ let
         };
       };
     };
-  };
 in {
   options.base16.schemes = {
     description = "Attribute set of schemes";
