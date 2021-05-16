@@ -48,10 +48,10 @@ let
         };
       };
     };
-  }
+  };
 in {
   options.base16.schemes = {
     description = "Attribute set of schemes";
     type = types.attrsOf schemeType;
-  }
+  };
 }
