@@ -7,9 +7,14 @@
   };
 
   outputs = { self, nixpkgs, flake-utils }:
-    flake-utils.lib.eachDefaultSystem (system: let
-      pkgs = nixpkgs.legacyPackages.${system};
+    (flake-utils.lib.eachDefaultSystem (system:
+      let
+        pkgs = nixpkgs.legacyPackages.${system};
       in {
         lib = (import ./.) { lib = pkgs.lib; inherit pkgs; };
-  });
+    })) // {
+      nixosModule = { ... }: {
+        imports = [ ./nixos-module.nix ];
+      };
+    };
 }
