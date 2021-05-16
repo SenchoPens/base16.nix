@@ -2,9 +2,12 @@
 with lib;
 let
   getScheme = { base00, base01, base02, base03, base04, base05, base06, base07
-    , base08, base09, base0A, base0B, base0C, base0D, base0E, base0F, ... }@original:
+    , base08, base09, base0A, base0B, base0C, base0D, base0E, base0F, ... }:
   rec {
-    inherit original;
+    original = {
+      inherit base00 base01 base02 base03 base04 base05 base06 base07
+              base08 base09 base0A base0B base0C base0D base0E base0F;
+    };
     originalHashtag = builtins.mapAttrs (_: v: "#" + v) original;
     originalDec = builtins.mapAttrs (name: color: colorHex2Dec color) original;
 
@@ -22,7 +25,7 @@ let
     [ base00 base01 base02 base03 base04 base05 base06 base07 base08 base09 base0A base0B base0C base0D base0E base0F ];
 
   getNamed = { base00, base01, base02, base03, base04, base05, base06, base07
-      , base08, base09, base0A, base0B, base0C, base0D, base0E, base0F }: {
+      , base08, base09, base0A, base0B, base0C, base0D, base0E, base0F, ... }: {
     bg = base00;
     dark = base01;
 
@@ -65,9 +68,11 @@ let
     A = a; B = b; C = c; D = d; E = e; F = f;
   };
 
-  splitHex = hexStr:
-    map (x: builtins.elemAt x 0) (builtins.filter (a: a != "" && a != [ ])
-      (builtins.split "(.{2})" (builtins.substring 1 6 hexStr)));
+  splitHex = hexStr: [
+    (builtins.substring 0 2 hexStr)
+    (builtins.substring 2 2 hexStr)
+    (builtins.substring 4 2 hexStr)
+  ];
 
   doubleDigitHexToDec = hex:
     16 * hex2decDigits."${builtins.substring 0 1 hex}"

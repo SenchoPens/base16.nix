@@ -28,19 +28,19 @@ let
           type = types.listOf colorType;
         };
 
-        numbered = mkOption {
+        listed = mkOption {
           description =
             "Same as original, but as a list in order of base00, base01, ..., base0F";
           type = types.listOf colorType;
         };
 
-        numberedHashtag = mkOption {
+        listedHashtag = mkOption {
           description =
             "Same as originalHashtag, but as a list in order of base00, base01, ..., base0F";
           type = types.listOf colorType;
         };
 
-        numberedDec = mkOption {
+        listedDec = mkOption {
           description =
             "Same as originalDec, but as a list in order of base00, base01, ..., base0F";
           type = types.listOf colorType;
