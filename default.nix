@@ -82,7 +82,7 @@ let
     builtins.concatStringsSep ","
     (map (x: toString (doubleDigitHexToDec x)) (splitHex color));
 
-  buildTheme = scheme: template: brightness:
+  buildTheme-ejs = scheme: template: brightness:
     pkgs.runCommand "${scheme}-theme" {} ''
     export HOME=$(pwd)/home; mkdir -p $HOME
     ${pkgs.base16-builder}/bin/base16-builder \
@@ -95,7 +95,7 @@ let
 in
 {
   inherit
-    buildTheme
+    buildTheme-ejs
     fromYAML
     fromYAMLPath
     getScheme

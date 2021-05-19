@@ -12,6 +12,10 @@
         pkgs = nixpkgs.legacyPackages.${system};
       in {
         lib = (import ./.) { lib = pkgs.lib; inherit pkgs; };
+
+        packages = {
+          base16-builder-python = import ./pkgs/base16-builder-python.nix;
+        };
     })) // {
       nixosModule = { ... }: {
         imports = [ ./nixos-module.nix ];
