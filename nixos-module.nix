@@ -1,15 +1,21 @@
-{ self, lib, pkgs, config, ... }:
+{ base16-pkgs, base16-inputs }:
+{ lib, pkgs, config, ... }:
 
 with lib;
 
 let
-  cfg = config.base16;
-
   colorType = types.str;
 
   schemeType =
     types.submodule {
       options = rec {
+        schemePath = mkOption {
+          description =
+            "Filepath to the scheme";
+          type = types.nullOr types.path;
+          default = null;
+        };
+
         original = mkOption {
           description =
             "Attribute set with keys and values in format of 'base0X' and 'rrggbb'";
@@ -63,11 +69,32 @@ let
             "Same as 'originalDec', but keys are renamed to colors they usually are, e.g. 'base0D' -> 'blue'";
           type = types.attrsOf colorType;
         };
+
+        builder = mkOption {
+          # TODO: implement
+          description =
+            "NOT IMPLEMENTED Provides variables that are listed in the section "Template Variables" of http://chriskempson.com/projects/base16/";
+          type = types.attrsOf colorType;
+        };
       };
     };
 in {
-  options.base16.schemes = mkOption {
-    description = "Attribute set of schemes";
-    type = types.attrsOf schemeType;
+  options.base16 = {
+    schemes = mkOption {
+      description = "Attribute set of schemes";
+      type = types.attrsOf schemeType;
+    };
+
+    cur = mkOption {
+      description = "Convenience option for the current scheme of the system";
+      type = schemeType;
+    };
+
+    lib = mkOption {
+      description = "Functions for theming";
+      type = types.attrsOf types.anything;
+    };
   };
+
+  config.base16.lib = import ./default.nix { pkgs = base16-pkgs; inputs = base16-inputs; };
 }

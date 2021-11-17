@@ -4,21 +4,40 @@
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
+    auto-base16-theme = {
+      url = "github:makuto/auto-base16-theme";
+      flake = false;
+    };
+    schemer2 = {
+      url = "github:thefryscorer/schemer2";
+      flake = false;
+    };
   };
 
-  outputs = { self, nixpkgs, flake-utils }:
+  outputs = { self, nixpkgs, flake-utils, ... } @ inputs:
     (flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
+
+        packages = import ./pkgs { inherit pkgs inputs; };
       in {
-        lib = (import ./.) { lib = pkgs.lib; inherit pkgs; };
+        lib = import ./. { inherit pkgs inputs; };
 
         packages = {
-          base16-builder-python = import ./pkgs/base16-builder-python.nix;
+          inherit (packages.base16-builder-python) pybase16-builder;
+          inherit (packages) auto-base16-theme;
+          inherit (packages) schemer2;
         };
-    })) // {
-      nixosModule = { ... }: {
-        imports = [ ./nixos-module.nix ];
-      };
-    };
+
+        nixosModule = import ./nixos-module.nix { base16-pkgs = pkgs; base16-inputs = inputs; };
+        # nixosModule = { ... }: {
+        #   imports = [ (import ./nixos-module.nix { base16-pkgs = pkgs; base16-inputs = inputs; }) ];
+        # };
+        devShell = pkgs.mkShell rec {
+          nativeBuildInputs = with pkgs; [
+            nixfmt
+          ];
+        };
+      }
+    ));
 }
