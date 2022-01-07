@@ -1,190 +1,221 @@
-{ pkgs, inputs, ... }:
+{ pkgs, lib, ... }:
 let
-  scheme =
-    { schemePath ? null, author ? "", scheme ? "", ... }@schemeArgs: rec {
-      # TODO: \/ does not compose good
-      inherit schemePath;
+  #------------------#
+  # HELPER FUNCTIONS #
+  #------------------#
 
-      colors = let
-        colors' = { base00, base01, base02, base03, base04, base05, base06
-          , base07, base08, base09, base0A, base0B, base0C, base0D, base0E
-          , base0F, ... }@this:
-          let
-            base = pkgs.lib.filterAttrs (name: _: hasPrefix "base" key) this;
-            mapBase = f:
-              colors' (builtins.mapAttrs
-                (_: value: f value) base);
-          in {
-            inherit base00 base01 base02 base03 base04 base05 base06 base07
-              base08 base09 base0A base0B base0C base0D base0E base0F;
+  /* Converts 2 digit hex to decimal number
 
-            # TODO: replace with __functor with a format argument from here:
-            # https://github.com/chriskempson/base16/blob/master/builder.md#template-variables
-            withHashtag = mapBase (v: "#" + v);
-            asDecimal = mapBase colorHex2Dec;
-            asList = mapAttrsToList (_: value: value) base;
-            mnemonic = getNamed this;
-          };
-      in colors' schemeArgs;
+     Example:
+       primaryHex2Dec "1a" = 26
+  */
+  primaryHex2Dec = hex:
+    let
+      hex2decDigits =
+        rec {
+          "0" = 0; "1" = 1; "2" = 2; "3" = 3; "4" = 4;
+          "5" = 5; "6" = 6; "7" = 7; "8" = 8; "9" = 9;
+          a = 10; b = 11; c = 12; d = 13; e = 14; f = 15;
+          A = a; B = b; C = c; D = d; E = e; F = f;
+        };
+    in
+      16 * hex2decDigits."${builtins.substring 0 1 hex}"
+      + hex2decDigits."${builtins.substring 1 2 hex}";
 
-      # TODO: do we need this?
-      builder = rec {
-        scheme-name = builtins.baseNameOf schemePath;
-        scheme-author = author;
-        scheme-slug = pkgs.lib.removeSuffix ".yaml" scheme-name;
+  /* Returns an attrset with the colors that the builder should provide, listed in
+     https://github.com/chriskempson/base16/blob/master/builder.md#template-variables
+
+     For convenience, attributes of the form `baseXX` are provided, which are equal to
+     `baseXX-hex`, along with a `toList` attribute, which is equial to `[ base00 ... base0F ]`
+     (mainly for config.console.colors).  Also, mnemonic color names for base08-base0F are provided:
+     ```
+      mnemonic = {
+        red = base08;
+        orange = base09;
+        yellow = base0A;
+        green = base0B;
+        cyan = base0C;
+        blue = base0D;
+        magenta = base0E;
+        brown = base0F;
+      };
+      ```
+  */
+  colors = { base00, base01, base02, base03, base04, base05, base06, base07
+    , base08, base09, base0A, base0B, base0C, base0D, base0E, base0F, ...
+    }@this:
+    let
+      base = lib.filterAttrs (name: _: lib.hasPrefix "base" name && builtins.length name == 6) this;
+
+      splitRGB = hex: {
+        r = builtins.substring 0 2 hex;
+        g = builtins.substring 2 2 hex;
+        b = builtins.substring 4 2 hex;
       };
 
-      # Builds a theme from a scheme and a template
-      __functor = self: args: buildTheme (args // { scheme = self; });
-    };
+      splitRGB' = f: hex: prefix:
+        let rgb = splitRGB hex;
+        in {
+          "${prefix}-r" = f rgb.r;
+          "${prefix}-g" = f rgb.g;
+          "${prefix}-b" = f rgb.b;
+        };
 
-  getNamed = { base00, base01, base02, base03, base04, base05, base06, base07
-    , base08, base09, base0A, base0B, base0C, base0D, base0E, base0F, ... }: {
-      bg = base00;
-      dark = base01;
+      addRGB = f: prefix:
+        builtins.foldl' (x: y: x // y) { }
+        (builtins.map (baseXX: splitRGB' f base.${baseXX} "${baseXX}-${prefix}")
+          (builtins.attrNames base));
 
-      alt = base02;
-      gray = base03;
+      base-hex-rgb = addRGB (x: x) "hex";
+      base-rgb-rgb = addRGB (x: builtins.toString (primaryHex2Dec x)) "rgb";
+      base-dec-rgb = addRGB (x: builtins.toString (primaryHex2Dec x / 256.0)) "dec";
 
-      dark_fg = base04;
-      default_fg = base05;
-      light_fg = base06;
+      base-hex = lib.mapAttrs' (k: v: lib.nameValuePair "${k}-hex" v) base;
+      base-short = lib.mapAttrs' (k: v: lib.nameValuePair "${k}" v) base;
 
-      fg = base07;
-
-      red = base08;
-      orange = base09;
-      yellow = base0A;
-      green = base0B;
-      cyan = base0C;
-      blue = base0D;
-      purple = base0E;
-      dark_orange = base0F;
-    };
-
-  # A scheme attrset from a path to yaml or from a yaml string
-  schemeFromYAML = yaml:
-    let
-      yamlPath = if builtins.isPath yaml then
-        yaml
-      else
-        builtins.toFile "scheme.yaml" yaml;
-      yaml2set = yamlPath:
-        builtins.fromJSON (builtins.readFile (pkgs.stdenv.mkDerivation {
-          name = "fromYAML";
-          phases = [ "buildPhase" ];
-          buildPhase = "${pkgs.yaml2json}/bin/yaml2json < ${yamlPath} > $out";
-        }));
-    in scheme ((yaml2set yamlPath) // { schemePath = path-to-yaml; });
-
-  # schemeFromSet = set:
-
-  colorHex2Dec = color:
-    let
-      hex2int = s:
-        with builtins;
-        if s == "" then
-          0
-        else
-          let l = stringLength s - 1;
-          in (hex2decDigits."${substring l 1 s}" + 16
-            * (hex2int (substring 0 l s)));
-
-      hex2decDigits = rec {
-        "0" = 0;
-        "1" = 1;
-        "2" = 2;
-        "3" = 3;
-        "4" = 4;
-        "5" = 5;
-        "6" = 6;
-        "7" = 7;
-        "8" = 8;
-        "9" = 9;
-        a = 10;
-        b = 11;
-        c = 12;
-        d = 13;
-        e = 14;
-        f = 15;
-        A = a;
-        B = b;
-        C = c;
-        D = d;
-        E = e;
-        F = f;
+      mnemonic = with base-short; {
+        red = base08;
+        orange = base09;
+        yellow = base0A;
+        green = base0B;
+        cyan = base0C;
+        blue = base0D;
+        magenta = base0E;
+        brown = base0F;
       };
 
-      splitHex = hexStr: [
-        (builtins.substring 0 2 hexStr)
-        (builtins.substring 2 2 hexStr)
-        (builtins.substring 4 2 hexStr)
-      ];
+      base-hex-bgr = lib.mapAttrs' (k: v:
+        let rgb = splitRGB v;
+        in lib.nameValuePair "${k}-hex-bgr" "${rgb.b}${rgb.g}${rgb.r}") base;
+    in base-hex // base-hex-rgb // base-rgb-rgb
+      // base-dec-rgb // base-hex-bgr // base-short
+      // mnemonic // { toList = base; };
 
-      doubleDigitHexToDec = hex:
-        16 * hex2decDigits."${builtins.substring 0 1 hex}"
-        + hex2decDigits."${builtins.substring 1 2 hex}";
-    in builtins.concatStringsSep ","
-    (map (x: toString (doubleDigitHexToDec x)) (splitHex color));
+  writeTextFile = path: text: ''${pkgs.writeTextDir path text}/${path}'';
 
-  # Helper functions for builders:
+  yaml2yamlPath = yaml:
+    if builtins.trace (builtins.trace (builtins.isPath yaml) "ooo ${yaml}") (builtins.isPath yaml) then
+      yaml
+    else
+      writeTextFile "untitled.yaml" yaml
+    ;
 
-  # Builders:
+  yamlPath2attrs = yamlPath:
+    builtins.fromJSON (builtins.readFile (pkgs.stdenv.mkDerivation {
+      # name = builtins.trace yamlPath "fromYAML";
+      name = "fromYAML";
+      phases = [ "buildPhase" ];
+      buildPhase = "${pkgs.yaml2json}/bin/yaml2json < ${builtins.trace "!!!${yamlPath}" yamlPath} > $out";
+    }));
 
-  # TODO: add to the buildTemplate function
-  # buildTemplate-ejs = schemePath: templatePath: brightness:
-  #   pkgs.runCommand "${schemePath}-theme" {} ''
-  #     export HOME=$(pwd)/home; mkdir -p $HOME
-  #     ${pkgs.base16-builder}/bin/base16-builder \
-  #       --scheme ${schemePath} \
-  #       --template ${templatePath} \
-  #       --brightness ${brightness} \
-  #       > $out
-  #   '';
-
-  packages = import ./pkgs { inherit pkgs inputs; };
-
-  # TODO: use flavours
-  buildTemplate-mustache = schemePath: templateDir: targetTemplate:
-    let tCfg = (fromYAMLPath "${templateDir}/config.yaml").${targetTemplate};
-    in pkgs.runCommand "${schemePath}-theme" { } ''
-        mkdir -p schemes/scheme/
-        mkdir -p templates/template/
-
-        cp ${schemePath} schemes/scheme/scheme.yaml
-      r} templates/template/templates
-
-        ${packages.base16-builder-python.python}/bin/pybase16 build
-
-        cat output/template/${tCfg.output}/base16-scheme${tCfg.extension} > $out
-    '';
-
-  # Builds a theme from a scheme and a template
-  buildTheme = {
-    # A scheme object (for example, config.base16.cur)
-    # or a path to .yaml file.
+  /* Builds a theme file from a scheme and a template and returns its path.
+     If you do not supply `templateRepo`, then
+     you need to supply both `template` and `extension`.
+  */
+  mkTheme = {
+    # A scheme attrset returned from `mkSchemeAttrs` function
     scheme,
-    # A directory with mustache files (config.yaml, etc.)
-    # or a flake input, or a path with templates/ directory with mustache files
-    # or (for base16-builder ejs templates) a template name
-    # from github:base16-builder/base16-builder/db/templates.
-    templateSrc,
-    # One of the options in config.yaml file.
-    # Most often you want this to be "default".
-    # For base16-builder ejs templates this specifies brightness
-    # ("dark", "light", "dark-256", etc.)
-    targetTemplate }:
+    # A directory with a `templates` subdirectory (containing templates and a `config.yaml` file)
+    # (e.g. a flake input of a template repository).
+    templateRepo ? null,
+    # Name of the template to lookup in templateRepo.
+    # Must be one of the top-level targets from `${templateRepo}/templates/config.yaml` and
+    # correspond to a template `${templateRepo}/templates/${targetTemplate}.mustache`.
+    target ? "default",
+    # A path to a file or a string, containing mustache template.
+    template ? null,
+    # An extension with which to save the resulting theme file.
+    extension ? null,
+  }:
     let
-      schemePath = scheme.schemePath or scheme;
-      # template 
-    in { };
+      ext =
+        if extension == null then
+          (yamlPath2attrs (builtins.trace "${templateRepo}/templates/config.yaml" "${templateRepo}/templates/config.yaml")).${target}.extension
+        else
+          extension
+        ;
+      themeFilename = "base16-${scheme.scheme-slug}.${ext}";
+      templatePath =
+        if template == null then
+          "${templateRepo}/templates/${target}.mustache"
+        else if builtins.isPath template then
+          template
+        else
+          pkgs.writeText "untitled.mustache" template
+        ;
+      # Taken from https://pablo.tools/blog/computers/nix-mustache-templates/
+      themeDerivation =  pkgs.stdenv.mkDerivation {
+        name = "${scheme.scheme-slug}";
 
-  generateSchemeFileFromImage = imagePath: schemeSlug:
-    pkgs.runCommand "${schemeSlug}.yaml" { } ''
-      ${packages.schemer2}/bin/schemer2 -format img::colors -in ${imagePath} -out colors.txt -maxBright 255 \
-        && ${packages.auto-base16-theme}/bin/auto-base16-theme ${
-          ./image-theme-template.yaml
-        } $out \
-        && rm colors.txt
-    '';
-in { inherit buildTheme scheme schemeFromYAML generateSchemeFileFromImage; }
+        nativeBuildInpts = [ pkgs.mustache-go ];
+
+        # Pass JSON as file to avoid escaping
+        passAsFile = [ "jsonData" ];
+        jsonData = builtins.toJSON (builtins.removeAttrs scheme [ "override" "__functor" ]);
+
+        # Disable phases which are not needed. In particular the unpackPhase will
+        # fail, if no src attribute is set
+        phases = [ "buildPhase" "installPhase" ];
+
+        buildPhase = ''
+          ${pkgs.mustache-go}/bin/mustache $jsonDataPath ${templatePath} > theme
+        '';
+
+        installPhase = ''
+          mkdir $out
+          cp theme $out/${themeFilename}
+        '';
+      };
+    in "${themeDerivation}/${themeFilename}";
+
+  #--------------------#
+  # EXPORTED FUNCTIONS #
+  #--------------------#
+
+  /* Returns a scheme attrset
+  */
+  mkSchemeAttrs =
+    # a path to a file or a string, containing a yaml scheme
+    # (see https://github.com/chriskempson/base16/blob/master/file.md#scheme-files)
+    # or an attrset containing `name`, `author` and `baseXX` fields.
+    scheme:
+    let
+      inputAttrs = 
+        if builtins.isAttrs scheme then
+          scheme
+        else
+          builtins.trace (yamlPath2attrs (yaml2yamlPath scheme)) (yamlPath2attrs (yaml2yamlPath scheme))
+        ;
+
+      meta = rec {
+        name = inputAttrs.scheme or "untitled";
+        author = inputAttrs.author or "untitled";
+        slug = inputAttrs.slug or (
+          if builtins.isPath scheme then
+            lib.removeSuffix ".yaml" (builtins.baseNameOf scheme)
+          else
+            "untitled"
+          );
+
+        scheme-name = name;
+        scheme-author = author;
+        scheme-slug = slug;
+      };
+    in (colors (builtins.trace inputAttrs inputAttrs)) // meta // {
+      outPath =
+        pkgs.writeTextFile "${meta.scheme-slug}.yaml"
+          (builtins.concatStringsSep "\n"
+            (lib.mapAttrsToList (name: value: "${name}: ${value}") inputAttrs));
+      override = newInputAttrs: mkSchemeAttrs (inputAttrs // newInputAttrs);
+      # Calling a scheme attrset will build a theme
+      __functor = self: args: mkTheme (
+        # if args is a flake input, then it must be templateRepo
+        (if args ? outPath then { templateRepo = args; } else args) // { scheme = self; }
+      );
+    };
+
+  /* Prepends "#" to every value in the attrset
+  */
+  prependHashtagRecursive = lib.mapAttrsRecursive (_: color: "#${color}");
+
+in { inherit mkSchemeAttrs prependHashtagRecursive; }
