@@ -45,7 +45,7 @@ let
     , base08, base09, base0A, base0B, base0C, base0D, base0E, base0F, ...
     }@this:
     let
-      base = lib.filterAttrs (name: _: lib.hasPrefix "base" name && builtins.length name == 6) this;
+      base = lib.filterAttrs (name: _: lib.hasPrefix "base" name && builtins.stringLength name == 6) this;
 
       splitRGB = hex: {
         r = builtins.substring 0 2 hex;
@@ -87,25 +87,26 @@ let
       base-hex-bgr = lib.mapAttrs' (k: v:
         let rgb = splitRGB v;
         in lib.nameValuePair "${k}-hex-bgr" "${rgb.b}${rgb.g}${rgb.r}") base;
-    in base-hex // base-hex-rgb // base-rgb-rgb
-      // base-dec-rgb // base-hex-bgr // base-short
-      // mnemonic // { toList = base; };
+
+      based = base-hex // base-hex-rgb // base-rgb-rgb
+        // base-dec-rgb // base-hex-bgr // base-short
+        // mnemonic;
+
+      toList = lib.attrValues base;
+
+      withHashtag =
+        let hashtag = color: "#${color}";
+        in (lib.mapAttrs (_: hashtag) based) // { toList = map hashtag toList; };
+
+    in based // { inherit toList withHashtag; };
 
   writeTextFile = path: text: ''${pkgs.writeTextDir path text}/${path}'';
 
-  yaml2yamlPath = yaml:
-    if builtins.trace (builtins.trace (builtins.isPath yaml) "ooo ${yaml}") (builtins.isPath yaml) then
-      yaml
-    else
-      writeTextFile "untitled.yaml" yaml
-    ;
-
-  yamlPath2attrs = yamlPath:
+  yaml2attrs = yaml:
     builtins.fromJSON (builtins.readFile (pkgs.stdenv.mkDerivation {
-      # name = builtins.trace yamlPath "fromYAML";
       name = "fromYAML";
       phases = [ "buildPhase" ];
-      buildPhase = "${pkgs.yaml2json}/bin/yaml2json < ${builtins.trace "!!!${yamlPath}" yamlPath} > $out";
+      buildPhase = "${pkgs.yaml2json}/bin/yaml2json < ${yaml} > $out";
     }));
 
   /* Builds a theme file from a scheme and a template and returns its path.
@@ -122,36 +123,40 @@ let
     # Must be one of the top-level targets from `${templateRepo}/templates/config.yaml` and
     # correspond to a template `${templateRepo}/templates/${targetTemplate}.mustache`.
     target ? "default",
-    # A path to a file or a string, containing mustache template.
+    # A string with mustache template.
+    # If is `null`, then `${templateRepo}/templates/${targetTemplate}.mustache` is used.
     template ? null,
-    # An extension with which to save the resulting theme file.
+    # An extension (e.g. ".config") with which to save the resulting theme file.
+    # If is `null` and `templateRepo` is passed, the extension will be grabbed from there,
+    # otherwise it's an empty string
     extension ? null,
   }:
     let
       ext =
         if extension == null then
-          (yamlPath2attrs (builtins.trace "${templateRepo}/templates/config.yaml" "${templateRepo}/templates/config.yaml")).${target}.extension
+          if templateRepo == null then
+            ""
+          else
+            (yaml2attrs "${templateRepo}/templates/config.yaml").${target}.extension
         else
           extension
         ;
-      themeFilename = "base16-${scheme.scheme-slug}.${ext}";
+      themeFilename = "base16-${scheme.scheme-slug}${ext}";
       templatePath =
         if template == null then
           "${templateRepo}/templates/${target}.mustache"
-        else if builtins.isPath template then
-          template
         else
-          pkgs.writeText "untitled.mustache" template
+          writeTextFile "${target}.mustache" template
         ;
       # Taken from https://pablo.tools/blog/computers/nix-mustache-templates/
-      themeDerivation =  pkgs.stdenv.mkDerivation {
-        name = "${scheme.scheme-slug}";
+      themeDerivation = pkgs.stdenv.mkDerivation rec {
+        name = "${builtins.unsafeDiscardStringContext scheme.scheme-slug}";
 
         nativeBuildInpts = [ pkgs.mustache-go ];
 
         # Pass JSON as file to avoid escaping
         passAsFile = [ "jsonData" ];
-        jsonData = builtins.toJSON (builtins.removeAttrs scheme [ "override" "__functor" ]);
+        jsonData = builtins.toJSON (builtins.removeAttrs scheme [ "outPath" "override" "__functor" ]);
 
         # Disable phases which are not needed. In particular the unpackPhase will
         # fail, if no src attribute is set
@@ -184,38 +189,43 @@ let
         if builtins.isAttrs scheme then
           scheme
         else
-          builtins.trace (yamlPath2attrs (yaml2yamlPath scheme)) (yamlPath2attrs (yaml2yamlPath scheme))
+          yaml2attrs scheme
         ;
 
-      meta = rec {
-        name = inputAttrs.scheme or "untitled";
+      inputMeta = {
+        scheme = inputAttrs.scheme or "untitled";
         author = inputAttrs.author or "untitled";
-        slug = inputAttrs.slug or (
-          if builtins.isPath scheme then
-            lib.removeSuffix ".yaml" (builtins.baseNameOf scheme)
-          else
-            "untitled"
-          );
-
-        scheme-name = name;
-        scheme-author = author;
-        scheme-slug = slug;
+        slug = inputAttrs.slug or (lib.removeSuffix ".yaml" (builtins.baseNameOf "${scheme}"));
       };
-    in (colors (builtins.trace inputAttrs inputAttrs)) // meta // {
-      outPath =
-        pkgs.writeTextFile "${meta.scheme-slug}.yaml"
-          (builtins.concatStringsSep "\n"
-            (lib.mapAttrsToList (name: value: "${name}: ${value}") inputAttrs));
-      override = newInputAttrs: mkSchemeAttrs (inputAttrs // newInputAttrs);
-      # Calling a scheme attrset will build a theme
-      __functor = self: args: mkTheme (
-        # if args is a flake input, then it must be templateRepo
-        (if args ? outPath then { templateRepo = args; } else args) // { scheme = self; }
-      );
+
+      builderMeta = {
+        scheme-name = inputMeta.scheme;
+        scheme-author = inputMeta.author;
+        scheme-slug = inputMeta.slug;
+      };
+
+      # Like Python magic methods
+      magic = {
+        # Lets scheme attrs be automatically coerced to string (`__str__`)
+        outPath =
+          writeTextFile "${inputMeta.slug}.yaml"
+            (builtins.concatStringsSep "\n"
+              (lib.mapAttrsToList (name: value: "${name}: ${value}") inputAttrs));
+        # Calling a scheme attrset will build a theme (`__call__`)
+        __functor = self: args: mkTheme (
+          # if args is a flake input, then it must be templateRepo
+          (if args ? outPath then { templateRepo = args; } else args) // { scheme = self; }
+        );
+      };
+
+      populatedColors = colors inputAttrs;
+
+      allOther = inputMeta // builderMeta // magic // {
+        override = new: mkSchemeAttrs (inputAttrs // inputMeta // new);
+      };
+
+    in populatedColors // allOther // {
+      withHashtag = populatedColors.withHashtag // allOther;
     };
 
-  /* Prepends "#" to every value in the attrset
-  */
-  prependHashtagRecursive = lib.mapAttrsRecursive (_: color: "#${color}");
-
-in { inherit mkSchemeAttrs prependHashtagRecursive; }
+in { inherit mkSchemeAttrs; }
