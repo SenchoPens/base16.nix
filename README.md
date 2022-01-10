@@ -340,11 +340,3 @@ Thanks to:
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md)
-
-## Troubleshooting
-If you see a error message like this: 
-```
-the string '...' is not allowed to refer to a store path
-```
-Where the string depends on `.slug` or `.scheme-slug` attribute,
-use `builtins.unsafeDiscardStringContext` on this string.

@@ -195,7 +195,8 @@ let
       inputMeta = {
         scheme = inputAttrs.scheme or "untitled";
         author = inputAttrs.author or "untitled";
-        slug = inputAttrs.slug or (lib.removeSuffix ".yaml" (builtins.baseNameOf "${scheme}"));
+        slug = inputAttrs.slug or (builtins.unsafeDiscardStringContext
+          (lib.removeSuffix ".yaml" (builtins.baseNameOf "${scheme}")));
       };
 
       builderMeta = {
