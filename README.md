@@ -2,6 +2,8 @@
 
 # base16.nix
 
+_1 configuration option, 16 colors_
+
 ### Features
 
 With `base16.nix`, you can:
