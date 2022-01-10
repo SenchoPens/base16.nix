@@ -4,6 +4,8 @@
 
 _1 configuration option, 16 colors_
 
+![demo](./demo.gif)
+
 #### What's base16?
 
 base16 is a standard for specifying colorschemes and application
