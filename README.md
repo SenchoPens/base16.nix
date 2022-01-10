@@ -20,8 +20,8 @@ This flake provides:
 ### Nonfeatures
 
 This project does not attempt to:
-- aggregate schemes or templates
-  (IMHO such aggregation is a not future-proof and user-limiting idea),
+- aggregate schemes or templates, as you can discover most of them through
+  [base16 repository]()
 - support EJS templates, which are part of the
   [base16-builder/base16-builder](https://github.com/base16-builder/base16-builder)
   repository, as it has been long time abandoned and almost all of the EJS templates
@@ -37,6 +37,8 @@ In this example, we will use base16.nix as a NixOS module to theme
 ### Setup
 
 - Open your NixOS configuration's `flake.nix` file.
+- Optionally, open [base16 repository](https://github.com/chriskempson/base16#template-repositories)
+  to pick a scheme and templates you want to use, in this tutorial we already chose them.
 - Add `base16.nix`, `eva` scheme and
   [zathura](https://github.com/HaoZeke/base16-zathura) and
   [vim](https://github.com/chriskempson/base16-vim) templates to the flake inputs.
