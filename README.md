@@ -4,6 +4,13 @@
 
 _1 configuration option, 16 colors_
 
+#### What's base16?
+
+base16 is a standard for specifying colorschemes and application
+configuration templates, that produced a lot of templates and schemes
+over the years. `base16.nix` makes using them in NixOS as easy as
+possible, while retaining much flexibility.
+
 ### Features
 
 With `base16.nix`, you can:
@@ -21,7 +28,7 @@ This flake provides:
 
 This project does not attempt to:
 - aggregate schemes or templates, as you can discover most of them through
-  [base16 repository]()
+  [base16 repository](https://github.com/chriskempson/base16)
 - support EJS templates, which are part of the
   [base16-builder/base16-builder](https://github.com/base16-builder/base16-builder)
   repository, as it has been long time abandoned and almost all of the EJS templates
@@ -299,7 +306,25 @@ mkTheme = {
 
 - [base16-nix](https://github.com/atpotts/base16-nix) by @atpotts and its forks, notably
 [base16-nix](https://github.com/AlukardBF/base16-nix) by @AlukardBF and [base16-nix](https://github.com/lukebfox/base16-nix) by @lukebfox.
-- [nix-colors](https://git.sr.ht/~misterio/nix-colors) by @misterio,
+- [nix-colors](https://git.sr.ht/~misterio/nix-colors) by @misterio, differences:
+  
+  `base16.nix` tries to have a rather minimalistic interface, exporting 1
+  configuration option and 1 function, but provide a plenty of ergonomic
+  logic within, to give user a way to configure maximum amount of
+  applications with minimum effort, because I think that's the point
+  of base16 - you pick an ideal for you scheme, almost without making
+  compromises, and you want 99-100% of your applications to use this
+  scheme.
+
+  So, the goal I was up to is not to provide a quick way to theme some popular
+  applications with some popular schemes, `nix-colors` with its libraries might do
+  that better, but to provide a general way to theme any application with any
+  scheme and to easily override it to your liking. With `base16.nix`, maybe you will
+  spend some more time on, say, generating a GTK theme, but you won't spend an
+  hour trying to figure out how to theme that one small not-so-popular app or how
+  to adjust a template a bit, or how to use a beautiful scheme you just found on
+  the internet, but with another orange color.
+
 - [theme-base16](https://gitlab.com/rycee/nur-expressions/-/tree/master/hm-modules/theme-base16) by @rycee.
 
 ## Acknowledgments
@@ -307,7 +332,7 @@ mkTheme = {
 Thanks to:
 - @balsoft for [nixos-config](https://code.balsoft.ru/balsoft/nixos-config),
   which inspired this library;
-- @cab404 for [genix7000 - icon generator for nix projects](https://github.com/cab404/genix7000);
+- @cab404 for [Genix7000 - icon generator for nix projects](https://github.com/cab404/genix7000);
 - @chriskempson for creating [base16](https://github.com/chriskempson/base16)
   and @belak for maintaining it;
 - @mmanchkin for guiding me in Nix, NixOS and life.
