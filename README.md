@@ -329,6 +329,10 @@ mkTheme = {
 
 - [theme-base16](https://gitlab.com/rycee/nur-expressions/-/tree/master/hm-modules/theme-base16) by @rycee.
 
+## Help
+If you need any help on how to use this module, feel free to open an issue or
+contact me via [email or telegram](https://github.com/SenchoPens).
+
 ## Acknowledgments
 
 Thanks to:
