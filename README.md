@@ -304,6 +304,19 @@ mkTheme = {
 }:
 ```
 
+## Repositories that use base16.nix
+Flake NixOS modules:
+- [Stylix](https://github.com/danth/stylix) — System-wide colorscheming and typography for NixOS.
+- [tmux-flake](https://github.com/VTimofeenko/tmux-flake) — a flake that configures tmux.
+
+Configs by:
+- [pborzenkov](https://github.com/pborzenkov/nix-config)
+- [nryz](https://github.com/nryz/config)
+- [MoritzBoehme](https://github.com/MoritzBoehme/dotfiles)
+- [IllustratedMan-code](https://github.com/IllustratedMan-code/nixconfig)
+
+Please feel free to list your repository above, it will make my day :)
+
 ## Alternatives
 
 - [base16-nix](https://github.com/atpotts/base16-nix) by @atpotts and its forks, notably
@@ -330,8 +343,9 @@ mkTheme = {
 - [theme-base16](https://gitlab.com/rycee/nur-expressions/-/tree/master/hm-modules/theme-base16) by @rycee.
 
 ## Help
+
 If you need any help on how to use this module, feel free to open an issue or
-contact me via [email or telegram](https://github.com/SenchoPens).
+contact me via email or telegram ([my contacts are here](https://github.com/SenchoPens)).
 
 ## Acknowledgments
 
