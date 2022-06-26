@@ -341,12 +341,14 @@ Configs by:
 
 Please feel free to list your repository above, it will make my day :)
 
-## ⚔️ Alternatives
+## 🎎 Alternatives
 
 - [base16-nix](https://github.com/atpotts/base16-nix) by @atpotts and its forks, notably
 [base16-nix](https://github.com/AlukardBF/base16-nix) by @AlukardBF and [base16-nix](https://github.com/lukebfox/base16-nix) by @lukebfox.
-- [nix-colors](https://git.sr.ht/~misterio/nix-colors) by @misterio,
+- [nix-colors](https://git.sr.ht/~misterio/nix-colors) by @misterio.
+  Thanks for the competition spirit! :)) And for the nix-wallpaper function, with which the preview GIF was generated.
   <details><summary>differences:</summary><blockquote>
+
   Roughly nix-colors can be viewed as an alternative
   to `base16.nix` + [Stylix](https://github.com/danth/stylix),
   without the mustache template support:
