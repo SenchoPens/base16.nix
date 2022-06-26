@@ -23,7 +23,7 @@ let
       + hex2decDigits."${builtins.substring 1 2 hex}";
 
   /* Returns an attrset with the colors that the builder should provide, listed in
-     https://github.com/chriskempson/base16/blob/master/builder.md#template-variables
+     https://github.com/base16-project/base16/blob/main/builder.md#template-variables
 
      For convenience, attributes of the form `baseXX` are provided, which are equal to
      `baseXX-hex`, along with a `toList` attribute, which is equial to `[ base00 ... base0F ]`
@@ -181,8 +181,8 @@ let
   */
   mkSchemeAttrs =
     # a path to a file or a string, containing a yaml scheme
-    # (see https://github.com/chriskempson/base16/blob/master/file.md#scheme-files)
-    # or an attrset containing `name`, `author` and `baseXX` fields.
+    # (see https://github.com/base16-project/base16/blob/main/file.md#scheme-files)
+    # or an attrset containing attributes `baseXX` and, optionally, `scheme` and `author`.
     scheme:
     let
       inputAttrs = 
