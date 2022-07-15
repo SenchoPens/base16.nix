@@ -41,18 +41,21 @@ let
       };
       ```
   */
-  colors = { base00, base01, base02, base03, base04, base05, base06, base07
-    , base08, base09, base0A, base0B, base0C, base0D, base0E, base0F, ...
-    }@this:
+  colors = scheme:
     let
-      base = lib.filterAttrs (name: _: lib.hasPrefix "base" name && builtins.stringLength name == 6) this;
+      # filter color fields from the scheme,
+      # trim the optional prefix hashtag
+      # and lower the values
+      base = lib.mapAttrs (_: value: lib.toLower (lib.removePrefix "#" value)) (
+        lib.filterAttrs (name: _: lib.hasPrefix "base" name && builtins.stringLength name == 6) scheme
+      );
 
+      # define local helper functions:
       splitRGB = hex: {
         r = builtins.substring 0 2 hex;
         g = builtins.substring 2 2 hex;
         b = builtins.substring 4 2 hex;
       };
-
       splitRGB' = f: hex: prefix:
         let rgb = splitRGB hex;
         in {
@@ -60,12 +63,12 @@ let
           "${prefix}-g" = f rgb.g;
           "${prefix}-b" = f rgb.b;
         };
-
       addRGB = f: prefix:
         builtins.foldl' (x: y: x // y) { }
         (builtins.map (baseXX: splitRGB' f base.${baseXX} "${baseXX}-${prefix}")
           (builtins.attrNames base));
 
+      # populate the fields:
       base-hex-rgb = addRGB (x: x) "hex";
       base-rgb-rgb = addRGB (x: builtins.toString (primaryHex2Dec x)) "rgb";
       base-dec-rgb = addRGB (x: builtins.toString (primaryHex2Dec x / 256.0)) "dec";
@@ -192,16 +195,23 @@ let
           yaml2attrs scheme
         ;
 
-      inputMeta = {
+      inputMeta = rec {
         scheme = inputAttrs.scheme or "untitled";
         author = inputAttrs.author or "untitled";
-        slug = inputAttrs.slug or (builtins.unsafeDiscardStringContext
-          (lib.removeSuffix ".yaml" (builtins.baseNameOf "${scheme}")));
+        description = inputAttrs.description or scheme;
+        slug =
+          lib.toLower (
+            inputAttrs.slug or (
+              builtins.unsafeDiscardStringContext (
+                lib.removeSuffix ".yaml" (
+                  builtins.baseNameOf "${scheme}"
+        ))));
       };
 
       builderMeta = {
         scheme-name = inputMeta.scheme;
         scheme-author = inputMeta.author;
+        scheme-description = inputMeta.description;
         scheme-slug = inputMeta.slug;
       };
 

@@ -1,6 +1,6 @@
-![logo](./logo.svg)
+![logo](logo.svg)
 
-![demo](./demo.gif)
+![demo](demo.gif)
 
 #### What's base16 and base16.nix?
 
@@ -34,19 +34,19 @@ With `base16.nix`, you can:
 ## 👀 Module example (covers majority of use-cases)
 
 In this example, we will use `base16.nix` as a NixOS module to theme
-`zathura`, `neovim` and `alacritty` to use the `nord` scheme in two steps — setup and theming.
+`zathura`, `neovim` and `alacritty` to use the `nord` scheme
 (home-manager module works the same way).
 
-### 1. Setup
+### Import and set the scheme (step 1/2)
 
-In your configuration's `flake.nix`:
+In your NixOS configuration directory:
 
 `flake.nix`
 ```nix
 { inputs = {
   # Add base16.nix, base16 schemes and
   # zathura and vim templates to the flake inputs.
-  base16.url = "/home/sencho/code/github.com/SenchoPens/base16.nix";
+  base16.url = github:SenchoPens/base16.nix;
   base16.inputs.nixpkgs.follows = "nixpkgs";
 
   base16-schemes = {
@@ -65,7 +65,7 @@ In your configuration's `flake.nix`:
   };
   ...
 };
-outputs = { self, ... }@inputs {
+outputs = { self, ... } @ inputs {
   ...
     nixosSystem {
       modules = [
@@ -74,7 +74,7 @@ outputs = { self, ... }@inputs {
         # set system's scheme to nord by setting `config.scheme`
         { scheme = "${inputs.base16-schemes}/nord.yaml"; }
         # import `theming.nix`, we will write it in the next, final, step
-        theming.nix
+        ./theming.nix
         ...
       ];
       # so you can use `inputs` in config files
@@ -88,7 +88,7 @@ outputs = { self, ... }@inputs {
 ... }
 ```
 
-### 2. Theming
+### Theme (step 2/2)
 
 Now that `config.scheme` is set, we can use it like a function to
 create themes from templates.
@@ -143,21 +143,19 @@ and as an <ins>attrset</ins> (to theme `alacritty`) — that's `base16.nix`' mag
 Read the **Documentation** section to see how it works.
 </blockquote>
 
-## 🍳 Cookbook
+## 🍳 How To
 
-### Setting `config.scheme`
-
-<details><summary>Importing a scheme from a YAML file</summary><blockquote>
+<details><summary>Import a scheme from a YAML file</summary><blockquote>
 
 ```nix
 config.scheme = "${inputs.base16-schemes}/nord.yaml";
 ```
 </blockquote></details>
 
-<details><summary>Overriding a scheme</summary><blockquote>
+<details><summary>Override a scheme</summary><blockquote>
 
-Now we need to explicitly use `mkSchemeAttrs` function
-to use the `override` field of the resulting scheme attrs:
+We need to explicitly use `mkSchemeAttrs` function
+to use the `override` field of the resulting _scheme attrs_:
 ```nix
 config.scheme = (config.lib.base16.mkSchemeAttrs "${inputs.base16-schemes}/nord.yaml").override {
   scheme = "Now it's my scheme >:]";
@@ -166,7 +164,7 @@ config.scheme = (config.lib.base16.mkSchemeAttrs "${inputs.base16-schemes}/nord.
 ```
 </blockquote></details>
 
-<details><summary>Declaring a scheme in Nix</summary><blockquote>
+<details><summary>Declare a scheme in Nix</summary><blockquote>
 
 ```nix
 config.scheme = {
@@ -180,17 +178,15 @@ config.scheme = {
 [source](https://code.balsoft.ru/balsoft/nixos-config/src/branch/master/modules/themes.nix)
 </blockquote></details>
 
-<details><summary>Using the library to theme with multiple schemes simultaneously</summary><blockquote>
+<details><summary>Use multiple schemes simultaneously</summary><blockquote>
 
-You can apply a template to a scheme without going through `config.scheme` option.
-
-Example of theming `zathura` without `config.scheme` — by calling `mkSchemeAttrs`:
+Achieve this by theming without `config.scheme` — by calling `mkSchemeAttrs`:
 ```nix
 home-manager.users.sencho.programs.zathura.extraConfig =
   builtins.readFile (config.lib.base16.mkSchemeAttrs inputs.base16-schemes inputs.base16-zathura);
 ```
 
-or like this, without importing `base16.nix` as a module at all:
+Without importing `base16.nix` as a module at all:
 
 ```nix
 home-manager.users.sencho.programs.zathura.extraConfig =
@@ -199,32 +195,40 @@ home-manager.users.sencho.programs.zathura.extraConfig =
 
 </blockquote></details>
 
-<details><summary>Changing a template's variant</summary><blockquote>
+<details><summary>Use template variation</summary><blockquote>
 
-Base16 template repositories often provide **multiple** templates.
-For example, [zathura](https://github.com/HaoZeke/base16-zathura) template repository
-provides `default.mustache` **and** `recolor.mustache` templates
-(the latter being used to color pdfs by the colorscheme along with the interface).
-By default, `base16.nix` will use the `default.mustache` template,
-so if you want to use e.g. the `recolor` one, write this:
+Template repositories often define more than one template variation.
+For example, [zathura template repository](https://github.com/HaoZeke/base16-zathura)
+defines `default.mustache` (colors only the interface) and `recolor.mustache`
+(colors the interface and pdfs).
+
+By default `base16.nix` uses `default.mustache`.
+To use another template, e.g. `recolor.mustache`:
 ```nix
 home-manager.users.sencho.programs.zathura.extraConfig =
-  builtins.readFile (config.scheme { templateRepo = inputs.base16-zathura; target = "recolor"; });
+  builtins.readFile (config.scheme {
+    templateRepo = inputs.base16-zathura; target = "recolor";
+  });
 ```
 </blockquote></details>
 
-<details><summary>Overriding a template</summary><blockquote>
+<details><summary>Override a template</summary><blockquote>
 
-Suppose you like the `default.mustache`, but want to **change** the background from `base00` to `base01`.
-You can use the scheme's `override` method:
+Sample use-case:
+suppose you like `zathura`'s `default.mustache` template,
+but want to change the background (`default-bg`) from `base00` to `base01`.
+
+1. Override the scheme only for `zathura`:
 ```nix
 home-manager.users.sencho.programs.zathura.extraConfig =
-  builtins.readFile (config.scheme.override {
-      base00 = config.scheme.base01;
-    } inputs.base16-zathura);
+  builtins.readFile ((config.scheme.override {
+    base00 = config.scheme.base01;
+  }) inputs.base16-zathura);
 ```
-But, unfortunately, in this template it will not only change the `default-bg` color, but also `inputbar-bg`,
-`notification-bg`, etc. All that's left is to copy-paste the template and change it how we want:
+Keep in mind that by doing so you'll change not only
+`default-bg` color, but also `inputbar-bg`, `notification-bg`, etc.
+
+2. Copy-paste the template and modify it:
 ```nix
 home-manager.users.sencho.programs.zathura.extraConfig =
   builtins.readFile (config.scheme { template = ''
@@ -235,14 +239,17 @@ home-manager.users.sencho.programs.zathura.extraConfig =
     set statusbar-fg "#{{base04-hex}}"
     set statusbar-bg "#{{base02-hex}}"
     ...
-   '');
+  ''; });
 ```
 </blockquote></details>
 
 
 ## 📚 Documentation
 
-### Module (`module.nix`)
+see [DOCUMENTATION.md](DOCUMENTATION.md)
+
+### Module
+_defined in [module.nix](module.nix)_
 
 - Adds a `scheme` option to be set to whatever `mkSchemeAttrs` accepts (see below).
   When used as a value, `scheme` will be equal to `mkSchemeAttrs scheme`.
@@ -250,15 +257,18 @@ home-manager.users.sencho.programs.zathura.extraConfig =
 
 As you can see, it's tiny. That's because the business logic is done by the library:
 
-### Library (`default.nix`)
+### Library
+_defined in [default.nix](default.nix)_
 
-Access it as `config.lib.base16` if using `base16.nix` as a NixOS module, otherwise as `pkgs.callPackage inputs.base16.lib {}`.
+Access it as:
+- `config.lib.base16` if using `base16.nix` as a NixOS module,
+- `pkgs.callPackage inputs.base16.lib {}` otherwise.
 
-It provides just 1 function:
+It exports just 1 function:
 
 #### `mkSchemeAttrs`
 <details>
-<summary>🙃</summary><blockquote>
+<summary>Click for </summary><blockquote>
 
 Given a scheme, which is **either**
 - a path to a YAML file,
@@ -288,7 +298,7 @@ Other cool stuff:
 - `withHashtag` — a scheme with `#` prepended to colors.
 - meta attributes: `scheme-name` and `scheme`, `scheme-author` and `author`, `scheme-slug` and `slug` (used for filenames),
 - `override` — a function to override the colors (via `baseXX`)
-  and meta attributes (`scheme`, `slug` and `author`), see **Cookbook** section,
+  and meta attributes (`scheme`, `slug` and `author`), see [How To](README.md#-how-to) section,
 - `outPath` — so you can write `"${config.scheme}"` to get a yaml file path with the scheme.
 - `__functor` — a magic attribute that calls `mkTheme` if you use _scheme attrs_ as a function:
   it passes the scheme as `scheme` and the argument as `templateRepo` (if it's a derivation or a flake input),
