@@ -2,7 +2,7 @@
 
 ![demo](demo.gif)
 
-#### What's base16 and base16.nix?
+#### What's base16 and `base16.nix`?
 
 - [base16](https://github.com/base16-project/base16) is a theming standard by
   which hundreds of
@@ -252,9 +252,9 @@ Consult the [DOCUMENTATION.md](DOCUMENTATION.md) to learn about every feature in
 detail and see how `base16.nix` works underhood.
 
 
-## 🤍 Repositories that use base16.nix
+## 🤍 Repositories that use `base16.nix`
 
-Flake NixOS modules:
+NixOS modules:
 - [Stylix](https://github.com/danth/stylix) — System-wide colorscheming and typography for NixOS.
 - [tmux-flake](https://github.com/VTimofeenko/tmux-flake) — a flake that configures tmux.
 
@@ -263,6 +263,7 @@ Configs by:
 - [nryz](https://github.com/nryz/config)
 - [MoritzBoehme](https://github.com/MoritzBoehme/dotfiles)
 - [IllustratedMan-code](https://github.com/IllustratedMan-code/nixconfig)
+- [Lyndeno](https://github.com/Lyndeno/nix-config)
 
 Please feel free to list your repository above, it will make my day :)
 
