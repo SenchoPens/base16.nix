@@ -22,16 +22,20 @@ It exports just 1 function:
 
 ### `mkSchemeAttrs`
 
-Given a scheme, which is **either**
+Given a [scheme](https://github.com/base16-project/home/blob/main/builder.md#schemes-repository),
+which is **either**
 - a path to a YAML file,
-- a string in YAML format,
-- an attrset with attributes `baseXX` and optionally `scheme` and `author`,
+- an attrset,
+which
+- MUST contain string attributes `baseXX`,
+- MAY contain string attributes `scheme`, `author`, `description`, `slug`,
+
 
 returns a _scheme attrset_ with a ton of convenient color attributes:
 
-- **Most** importantly, every attribute from [the base16 standard](https://github.com/base16-project/base16/blob/main/builder.md#template-variables),
-- Attributes `baseXX = baseXX-hex`, e.g. `base00 = "000000"`;
-- `toList = [ base00 ... base0F ]`, e.g. for `config.console.colors`,
+- every attribute from [the base16 standard](https://github.com/base16-project/base16/blob/main/builder.md#template-variables),
+- attributes `baseXX = baseXX-hex`, e.g. `base00 = "000000"`;
+- `toList = [ base00 ... base0F ]`, for use in e.g. `config.console.colors`,
 - mnemonic color names for `base08` — `base0F`:
   ```nix
   mnemonic = {
@@ -47,11 +51,11 @@ returns a _scheme attrset_ with a ton of convenient color attributes:
   ```
 
 Other cool stuff:
-- `withHashtag` — a scheme with `#` prepended to colors.
-- meta attributes: `scheme-name` and `scheme`, `scheme-author` and `author`, `scheme-slug` and `slug` (used for filenames),
+- `withHashtag` — a scheme with `#` prepended to colors,
+- meta attributes: `scheme-name` & `scheme`, `scheme-author` & `author`, `scheme-slug` & `slug`, `scheme-description` & `descriptio`,
 - `override` — a function to override the colors (via `baseXX`)
   and meta attributes (`scheme`, `slug` and `author`), see [How To](README.md#-how-to) section,
-- `outPath` — so you can write `"${config.scheme}"` to get a yaml file path with the scheme.
+- `outPath` — a magic attribute that guarantees that`"${config.scheme}"` equals to a path to a yaml file with the scheme,
 - `__functor` — a magic attribute that calls `mkTheme` if you use _scheme attrs_ as a function:
   it passes the scheme as `scheme` and the argument as `templateRepo` (if it's a derivation or a flake input),
   otherwise it passes `argument // { scheme = `_scheme attrs_` }`

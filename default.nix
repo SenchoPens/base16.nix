@@ -183,29 +183,34 @@ let
   /* Returns a scheme attrset
   */
   mkSchemeAttrs =
-    # a path to a file or a string, containing a yaml scheme
-    # (see https://github.com/base16-project/base16/blob/main/file.md#scheme-files)
-    # or an attrset containing attributes `baseXX` and, optionally, `scheme` and `author`.
+    # A path to a file or an attrset.
+    # It MUST contain contain string attributes `baseXX`
+    # and MAY contain string attributes `scheme`, `author`, `description`, `slug`
+    # (see https://github.com/base16-project/home/blob/main/builder.md#schemes-repository).
     scheme:
     let
       inputAttrs = 
         if builtins.isAttrs scheme then
           scheme
         else
-          yaml2attrs scheme
+          { slug =
+              lib.removeSuffix ".yaml" (
+                builtins.baseNameOf (
+                  builtins.unsafeDiscardStringContext "${scheme}"
+          ));}
+          //
+          (yaml2attrs scheme)
         ;
 
       inputMeta = rec {
-        scheme = inputAttrs.scheme or "untitled";
-        author = inputAttrs.author or "untitled";
-        description = inputAttrs.description or scheme;
+        scheme = ''${inputAttrs.scheme or "untitled"}'';
+        author = ''${inputAttrs.author or "untitled"}'';
+        description = ''${inputAttrs.description or scheme}'';
         slug =
           lib.toLower (
-            inputAttrs.slug or (
-              builtins.unsafeDiscardStringContext (
-                lib.removeSuffix ".yaml" (
-                  builtins.baseNameOf "${scheme}"
-        ))));
+            lib.strings.sanitizeDerivationName (
+              inputAttrs.slug or scheme
+        ));
       };
 
       builderMeta = {
