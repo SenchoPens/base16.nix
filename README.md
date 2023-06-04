@@ -48,7 +48,6 @@ In your NixOS configuration directory:
   # Add base16.nix, base16 schemes and
   # zathura and vim templates to the flake inputs.
   base16.url = github:SenchoPens/base16.nix;
-  base16.inputs.nixpkgs.follows = "nixpkgs";
 
   base16-schemes = {
     url = github:base16-project/base16-schemes;
