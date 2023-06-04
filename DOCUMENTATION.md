@@ -1,9 +1,6 @@
 # Documentation
 
-The documentation fully explains how everything works.
-
-## Module
-_defined in [module.nix](module.nix)_
+## Module ([module.nix](module.nix))
 
 - Adds a `scheme` option to be set to whatever `mkSchemeAttrs` accepts (see below).
   When used as a value, `scheme` will be equal to `mkSchemeAttrs scheme`.
@@ -11,14 +8,13 @@ _defined in [module.nix](module.nix)_
 
 As you can see, it's tiny. That's because the business logic is done by the library:
 
-## Library
-_defined in [default.nix](default.nix)_
+## Library ([default.nix](default.nix))
 
 Access it as:
 - `config.lib.base16` if using `base16.nix` as a NixOS module,
 - `pkgs.callPackage inputs.base16.lib {}` otherwise.
 
-It exports just 1 function:
+It exports 3 functions:
 
 ### `mkSchemeAttrs`
 
@@ -63,7 +59,15 @@ Other cool stuff:
 Note: `∀ x . mkSchemeAttrs (mkSchemeAttrs x) == mkSchemeAttrs x`
 </blockquote></details>
 
-This function isn't exported, but it's what powers up the _scheme attrset_'s `__functor` attribute:
+### `yaml2attrs`
+Given a path to a YAML file, converts its' contents to a Nix attrset in pure Nix. May fail on complex YAMLs.
+
+### `yaml2attrs-ifd`
+Given a path to a YAML file, converts its' contents to a Nix attrset using `yaml2json` package. Causes an [IFD](https://nixos.wiki/wiki/Import_From_Derivation). Isn't used by default, but can help if you're experiencing troubles with incorrectly parsed YAML files (see README Troubleshooting section for details).
+
+---
+
+The function below isn't exported, but it's what powers up the _scheme attrset_'s `__functor` attribute:
 
 #### `mkTheme`
 <details><summary>🙃</summary><blockquote>
@@ -89,4 +93,9 @@ mkTheme = {
   # If is `null` and `templateRepo` is passed, the extension will be grabbed from there,
   # otherwise it's an empty string
   extension ? null,
+  # Whether to use [IFD](https://nixos.wiki/wiki/Import_From_Derivation) to parse yaml.
+  # Can cause problems with `nix flake check / show` (see the issue #3).
+  use-ifd ? false,
+  # Whether to check if the config.yaml was parsed correctly.
+  check-parsed-config-yaml ? true,
 }:

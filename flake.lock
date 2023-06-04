@@ -1,21 +1,24 @@
 {
   "nodes": {
-    "nixpkgs": {
+    "fromYaml": {
+      "flake": false,
       "locked": {
-        "lastModified": 1638371214,
-        "narHash": "sha256-0kE6KhgH7n0vyuX4aUoGsGIQOqjIx2fJavpCWtn73rc=",
-        "path": "/nix/store/d0dl9ch4hhxkqikc1dw3868j95gsbb0h-source",
-        "rev": "a640d8394f34714578f3e6335fc767d0755d78f9",
-        "type": "path"
+        "lastModified": 1685846909,
+        "narHash": "sha256-ibxtG018Qq2Qjxir4Hai3Gr1hOOa+ad4V0EbFaHOj9Y=",
+        "owner": "SenchoPens",
+        "repo": "fromYaml",
+        "rev": "706176e156923d963ead81fe6bfba041f057cc65",
+        "type": "github"
       },
       "original": {
-        "id": "nixpkgs",
-        "type": "indirect"
+        "owner": "SenchoPens",
+        "repo": "fromYaml",
+        "type": "github"
       }
     },
     "root": {
       "inputs": {
-        "nixpkgs": "nixpkgs"
+        "fromYaml": "fromYaml"
       }
     }
   },

@@ -1,3 +1,4 @@
+fromYaml:
 { pkgs, lib, ... }:
 let
   #------------------#
@@ -103,14 +104,45 @@ let
 
     in based // { inherit toList withHashtag; };
 
-  writeTextFile = path: text: ''${pkgs.writeTextDir path text}/${path}'';
+  writeTextFile' = path: text: ''${pkgs.writeTextDir path text}/${path}'';
 
-  yaml2attrs = yaml:
-    builtins.fromJSON (builtins.readFile (pkgs.stdenv.mkDerivation {
-      name = "fromYAML";
-      phases = [ "buildPhase" ];
-      buildPhase = "${pkgs.yaml2json}/bin/yaml2json < ${yaml} > $out";
-    }));
+  yaml2json = yaml: pkgs.stdenv.mkDerivation {
+    name = "fromYAML";
+    phases = [ "buildPhase" ];
+    buildPhase = "${pkgs.yaml2json}/bin/yaml2json < ${yaml} > $out";
+  };
+  yaml2attrs-ifd = yaml: builtins.fromJSON (builtins.readFile (yaml2json yaml));
+  yaml2attrs = yaml: import "${fromYaml}/fromYaml.nix" { inherit lib; } (builtins.readFile yaml);
+  # Checks that the above yaml2attrs function has correctly parsed an yaml file.
+  check-parsed-yaml = yaml: let 
+    correctlyParsedYamlAsJson = yaml2json yaml;
+    yaml-filename = lib.escapeShellArg "${yaml}";
+    parsedYamlAsJson =
+      pkgs.writeText "parsed-yaml-as-json" (builtins.toJSON (yaml2attrs yaml));
+  in pkgs.stdenv.mkDerivation {
+    name = "base16-nix-parse-check";
+    nativeCheckInputs = [ pkgs.diffutils pkgs.jd-diff-patch ];
+    doCheck = true;
+    phases = [ "checkPhase" "installPhase" ];
+    checkPhase = ''
+      runHook preCheck
+      set +e
+      DIFF=$(jd ${correctlyParsedYamlAsJson} ${parsedYamlAsJson}) 
+      set -e
+      if [ "$DIFF" != "" ] 
+      then
+        echo 'Output of "jd ${correctlyParsedYamlAsJson} ${parsedYamlAsJson}":'
+        echo "$DIFF"
+        echo 'Error:' ${yaml-filename} 'was parsed incorrectly during nix evaluation.'
+        echo 'Please consult https://github.com/SenchoPens/base16.nix/tree/main#%EF%B8%8F-troubleshooting'
+        exit 1
+      fi
+      runHook postCheck
+    '';
+    installPhase = ''
+      mkdir $out
+    '';
+  };
 
   /* Builds a theme file from a scheme and a template and returns its path.
      If you do not supply `templateRepo`, then
@@ -133,14 +165,26 @@ let
     # If is `null` and `templateRepo` is passed, the extension will be grabbed from there,
     # otherwise it's an empty string
     extension ? null,
+    # Whether to use [IFD](https://nixos.wiki/wiki/Import_From_Derivation) to parse yaml.
+    # Can cause problems with `nix flake check / show` (see the issue #3).
+    use-ifd ? false,
+    # Whether to check if the config.yaml was parsed correctly.
+    check-parsed-config-yaml ? true,
   }:
     let
+      config-yaml =
+        if (extension == null && templateRepo != null) then
+          "${templateRepo}/templates/config.yaml"
+        else
+          null;
+      check-parsed-config-yaml' = config-yaml != null && check-parsed-config-yaml && !use-ifd;
       ext =
         if extension == null then
           if templateRepo == null then
             ""
-          else
-            (yaml2attrs "${templateRepo}/templates/config.yaml").${target}.extension
+          else let
+            parsed = (if use-ifd then yaml2attrs-ifd else yaml2attrs) config-yaml;
+          in parsed.${target}.extension
         else
           extension
         ;
@@ -149,24 +193,25 @@ let
         if template == null then
           "${templateRepo}/templates/${target}.mustache"
         else
-          writeTextFile "${target}.mustache" template
+          writeTextFile' "${target}.mustache" template
         ;
       # Taken from https://pablo.tools/blog/computers/nix-mustache-templates/
-      themeDerivation = pkgs.stdenv.mkDerivation rec {
+      themeDerivation = pkgs.stdenv.mkDerivation {
         name = "${builtins.unsafeDiscardStringContext scheme.scheme-slug}";
 
-        nativeBuildInpts = [ pkgs.mustache-go ];
+        nativeBuildInputs = [ pkgs.mustache-go ]
+          ++ lib.optional check-parsed-config-yaml' (check-parsed-yaml config-yaml);
 
         # Pass JSON as file to avoid escaping
         passAsFile = [ "jsonData" ];
-        jsonData = builtins.toJSON (builtins.removeAttrs scheme [ "outPath" "override" "__functor" ]);
+        jsonData = builtins.toJSON (builtins.removeAttrs scheme [ "outPath" "override" "check" "__functor" ]);
 
         # Disable phases which are not needed. In particular the unpackPhase will
         # fail, if no src attribute is set
         phases = [ "buildPhase" "installPhase" ];
 
         buildPhase = ''
-          ${pkgs.mustache-go}/bin/mustache $jsonDataPath ${templatePath} > theme
+          mustache $jsonDataPath ${templatePath} > theme
         '';
 
         installPhase = ''
@@ -197,10 +242,7 @@ let
               lib.removeSuffix ".yaml" (
                 builtins.baseNameOf (
                   builtins.unsafeDiscardStringContext "${scheme}"
-          ));}
-          //
-          (yaml2attrs scheme)
-        ;
+          )); } // yaml2attrs scheme;
 
       inputMeta = rec {
         scheme = ''${inputAttrs.scheme or "untitled"}'';
@@ -224,7 +266,7 @@ let
       magic = {
         # Lets scheme attrs be automatically coerced to string (`__str__`)
         outPath =
-          writeTextFile "${inputMeta.slug}.yaml"
+          writeTextFile' "${inputMeta.slug}.yaml"
             (builtins.concatStringsSep "\n"
               (lib.mapAttrsToList (name: value: "${name}: ${value}") inputAttrs));
         # Calling a scheme attrset will build a theme (`__call__`)
@@ -236,12 +278,25 @@ let
 
       populatedColors = colors inputAttrs;
 
-      allOther = inputMeta // builderMeta // magic // {
-        override = new: mkSchemeAttrs (inputAttrs // inputMeta // new);
+      allOther = inputMeta // builderMeta // magic // rec {
+        check =
+          if !(builtins.isAttrs scheme) then check-parsed-yaml scheme
+          else pkgs.emptyDirectory;
+        override = new: let
+          new-scheme = mkSchemeAttrs (inputAttrs // inputMeta // new);
+          new-override = new-scheme.override;
+          allOther-patch = {
+            inherit check;
+            override = new-new: (new-override new-new) // patch;
+          };
+          patch = {
+            withHashtag = new-scheme.withHashtag // allOther-patch;
+          } // allOther-patch;
+        in new-scheme // patch;
       };
 
     in populatedColors // allOther // {
       withHashtag = populatedColors.withHashtag // allOther;
     };
 
-in { inherit mkSchemeAttrs; }
+in { inherit mkSchemeAttrs yaml2attrs-ifd yaml2attrs; }
