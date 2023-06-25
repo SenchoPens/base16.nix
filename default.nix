@@ -229,12 +229,12 @@ let
         phases = [ "buildPhase" "installPhase" ];
 
         buildPhase = ''
-          mustache $jsonDataPath ${templatePath} > theme
+          mustache "$jsonDataPath" ${lib.escapeShellArg templatePath} > theme
         '';
 
         installPhase = ''
           mkdir $out
-          cp theme $out/${themeFilename}
+          cp theme $out/${lib.escapeShellArg themeFilename}
         '';
       };
     in "${themeDerivation}/${themeFilename}";
