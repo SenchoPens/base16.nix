@@ -144,6 +144,20 @@ let
     '';
   };
 
+  /* Ensure Base24 colors are available
+     https://github.com/tinted-theming/base24/blob/master/styling.md
+  */
+  mkBase24 = scheme: scheme // {
+    base10 = scheme.base10 or scheme.base00;
+    base11 = scheme.base11 or scheme.base00;
+    base12 = scheme.base12 or scheme.base08;
+    base13 = scheme.base13 or scheme.base0A;
+    base14 = scheme.base14 or scheme.base0B;
+    base15 = scheme.base15 or scheme.base0C;
+    base16 = scheme.base16 or scheme.base0D;
+    base17 = scheme.base17 or scheme.base0E;
+  };
+
   /* Builds a theme file from a scheme and a template and returns its path.
      If you do not supply `templateRepo`, then
      you need to supply both `template` and `extension`.
@@ -234,7 +248,7 @@ let
     # (see https://github.com/base16-project/home/blob/main/builder.md#schemes-repository).
     scheme:
     let
-      inputAttrs = 
+      parsedInput =
         if builtins.isAttrs scheme then
           scheme
         else
@@ -243,6 +257,8 @@ let
                 builtins.baseNameOf (
                   builtins.unsafeDiscardStringContext "${scheme}"
           )); } // yaml2attrs scheme;
+
+      inputAttrs = mkBase24 parsedInput;
 
       inputMeta = rec {
         scheme = ''${inputAttrs.scheme or "untitled"}'';
@@ -283,7 +299,7 @@ let
           if !(builtins.isAttrs scheme) then check-parsed-yaml scheme
           else pkgs.emptyDirectory;
         override = new: let
-          new-scheme = mkSchemeAttrs (inputAttrs // inputMeta // new);
+          new-scheme = mkSchemeAttrs (parsedInput // inputMeta // new);
           new-override = new-scheme.override;
           allOther-patch = {
             inherit check;
