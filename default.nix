@@ -206,6 +206,10 @@ let
       templatePath =
         if template == null then
           "${templateRepo}/templates/${target}.mustache"
+        else if lib.isPath template then
+          template
+        else if lib.isDerivation template then
+          template.outPath
         else
           writeTextFile' "${target}.mustache" template
         ;
