@@ -10,7 +10,7 @@
 
   outputs = { self, fromYaml, ... }:
     {
-      lib = import ./. fromYaml;
+      lib = import ./lib fromYaml;
 
       nixosModule = import ./module.nix self;
 

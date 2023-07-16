@@ -8,13 +8,13 @@
 
 As you can see, it's tiny. That's because the business logic is done by the library:
 
-## Library ([default.nix](default.nix))
+## Library ([lib](lib/default.nix))
 
 Access it as:
 - `config.lib.base16` if using `base16.nix` as a NixOS module,
 - `pkgs.callPackage inputs.base16.lib {}` otherwise.
 
-It exports 3 functions:
+It exports 2 functions:
 
 ### `mkSchemeAttrs`
 
@@ -47,30 +47,27 @@ returns a _scheme attrset_ with a ton of convenient color attributes:
   ```
 
 Other cool stuff:
-- `withHashtag` — a scheme with `#` prepended to colors,
-- meta attributes: `scheme-name` & `scheme`, `scheme-author` & `author`, `scheme-slug` & `slug`, `scheme-description` & `descriptio`,
+- `withHashtag` — a scheme with `#` prepended to colors;
+- meta attributes: `scheme-name` & `scheme`, `scheme-author` & `author`, `scheme-slug` & `slug`, `scheme-description` & `description`;
 - `override` — a function to override the colors (via `baseXX`)
-  and meta attributes (`scheme`, `slug` and `author`), see [How To](README.md#-how-to) section,
-- `outPath` — a magic attribute that guarantees that`"${config.scheme}"` equals to a path to a yaml file with the scheme,
-- `__functor` — a magic attribute that calls `mkTheme` if you use _scheme attrs_ as a function:
-  it passes the scheme as `scheme` and the argument as `templateRepo` (if it's a derivation or a flake input),
-  otherwise it passes `argument // { scheme = `_scheme attrs_` }`
+  and meta attributes (`scheme`, `slug` and `author`), see the relevant entry in the [How To](README.md#-how-to) section;
+- `outPath` — an attribute for coercion to the scheme's path, i.e. `"${config.scheme}"` equals to a path to a yaml file with the scheme;
+- `__functor` — an attribute for coercion to a function: if you use _scheme attrs_ as a function, it will call `mkTheme` by passing the scheme as `scheme` and the argument you called _scheme attrs_ with as `templateRepo` (if it's a derivation or a flake input), otherwise it passes `argument // { scheme = `_scheme attrs_` }`.
 
 Note: `∀ x . mkSchemeAttrs (mkSchemeAttrs x) == mkSchemeAttrs x`
 </blockquote></details>
 
 ### `yaml2attrs`
-Given a path to a YAML file, converts its' contents to a Nix attrset in pure Nix. May fail on complex YAMLs.
-
-### `yaml2attrs-ifd`
-Given a path to a YAML file, converts its' contents to a Nix attrset using `yaml2json` package. Causes an [IFD](https://nixos.wiki/wiki/Import_From_Derivation). Isn't used by default, but can help if you're experiencing troubles with incorrectly parsed YAML files (see README Troubleshooting section for details).
+Given a path to a YAML file, converts its' contents to a Nix attrset in pure Nix.
+- On `use-ifd = "never"` (default), may fail on complex YAMLs.
+- On `use-ifd = "always"`, converts the file's contents to a Nix attrset using `yaml2json` package. Causes an [IFD](https://nixos.wiki/wiki/Import_From_Derivation). Isn't used by default, but can help if you're experiencing troubles with incorrectly parsed YAML files (see README Troubleshooting section for details).
+- On `use-ifd = "auto"`, causes an IFD if recognizes a complex YAML on which nix parser fails.
 
 ---
 
 The function below isn't exported, but it's what powers up the _scheme attrset_'s `__functor` attribute:
 
 #### `mkTheme`
-<details><summary>🙃</summary><blockquote>
 
 Builds a theme file from a scheme and a template and returns its path.
 If you don't supply `templateRepo`, then supply both `template` and `extension`.
