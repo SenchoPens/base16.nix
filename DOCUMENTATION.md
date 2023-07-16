@@ -6,7 +6,7 @@
   When used as a value, `scheme` will be equal to `mkSchemeAttrs scheme`.
 - Sets `config.lib.base16.mkSchemeAttrs`.
 
-As you can see, it's tiny. That's because the business logic is done by the library:
+Essentially, the module is a NixOS / home-manager interface to the library.
 
 ## Library ([lib](lib/default.nix))
 

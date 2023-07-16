@@ -70,9 +70,10 @@ let
       with-ifd = builtins.fromJSON (builtins.readFile (yaml2json yaml));
     in
       if use-ifd == "always" then with-ifd
-      else if use-ifd == "never" then without-ifd
+      else if use-ifd == "never" then
+        if (check without-ifd).success then without-ifd
+        else builtins.trace msg.no-ifd-failed without-ifd
       else if (check without-ifd).success then without-ifd
-      # else builtins.traceVerbose msg.no-ifd-failed with-ifd;
       else builtins.trace msg.no-ifd-failed with-ifd;
 
   /* Returns a derivation that checks that an attrset was correctly parsed from a yaml file.

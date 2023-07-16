@@ -299,14 +299,46 @@ Please feel free to list your repository above, it will make my day :)
 
 <details><summary>Error / incorrect behavior after updating base16.nix or adding a new source / template</summary><blockquote>
 
-The most probable reason of such an error is either a scheme or a template YAML file.
-Since version v2.0.0 `base16.nix` parses the YAML file in pure Nix to bypass IFD issues.
-The parser work for most `base16-<scheme-name>.yaml` and templates' `config.yaml` files, but,
+The most probable reason of such an error is incorrectly parsed YAML file of either a scheme or a template.
+
+### Fix incorrectly parsed YAML file
+
+- Enable IFD (but beware of a possible error described below):
+  If the problem is in the scheme YAML file, parse it with `config.lib.base16.yaml2attrs` first as such:
+  ```nix
+  config.scheme = config.lib.base16.yaml2attrs {
+    yaml = "${inputs.base16-schemes}/nord.yaml";
+    use-ifd = "always";
+  };
+  ```
+  If the problem is in the template `templates/config.yaml` file, turn on `use-ifd`:
+  ```nix
+  home-manager.users.sencho.programs.zathura.extraConfig =
+    builtins.readFile (config.scheme {
+      use-ifd = "always";
+      templateRepo = inputs.base16-zathura; target = "recolor";
+    });
+  ```
+- If you think that it's safe to ignore the error on template instantiation, you can turn off the check:
+  ```nix
+  home-manager.users.sencho.programs.zathura.extraConfig =
+    builtins.readFile (config.scheme {
+      check-parsed-config-yaml = false;
+      templateRepo = inputs.base16-zathura; target = "recolor";
+    });
+  ```
+- If the problem is with a scheme YAML file and the nix evaluates, add the `config.scheme.check` derivation to your NixOS / home-manager package list, this will indicate which part of the YAML is being parsed incorrectly.
+- Submit an issue.
+- Fix the YAML upstream. Probable causes: trailing spaces, file structure differs from typical `config.yaml` / scheme YAML files.
+- Fix the Nix parser 😈.
+
+Context: since version v2.0.0 `base16.nix` parses the YAML file in pure Nix to bypass IFD issues.
+The parser works for most `base16-<scheme-name>.yaml` and templates' `config.yaml` files, but,
 as YAML can be quite complicated, sometimes they can be parsed incorrectly.
 
 The exact error depends on the point of failure.
-It probably will be cryptic if incorrect parsing caused an issue during nix evaluation.
-Otherwise, if your flake evaluates (`nix flake check` succeeds), the error will look something like this:
+It will probably be cryptic if incorrect parsing caused an issue during nix evaluation.
+Otherwise, if your flake evaluates (`nix flake check` succeeds), the error may look something like this:
 ```
 error: builder for '/nix/store/snbbfb43qphzfl6xr1mjs0mr8jny66x9-base16-nix-parse-check.drv' failed with exit code 1;
        last 7 log lines:
@@ -318,47 +350,18 @@ error: builder for '/nix/store/snbbfb43qphzfl6xr1mjs0mr8jny66x9-base16-nix-parse
        > Error: /nix/store/qhdqwj0mfp8qn0gq5s95pgd2i57lb09c-source/base16-kandinsky.yaml was parsed incorrectly during nix evaluation.
        > Please consult https://github.com/SenchoPens/base16.nix/tree/main#%EF%B8%8F-troubleshooting
 ```
-This check happens by default for templates by installing a special derivation. You can do it for scheme too by adding the `config.scheme.check` derivation to your NixOS / home-manager package list. 
-
-### Fix incorrectly parsed YAML file
-
-- If the problem is with a scheme YAML file and the nix evaluates, add the `config.scheme.check` derivation to your NixOS / home-manager package list, this will indicate which part of the YAML is being parsed incorrectly.
-- If you think that it is safe to ignore this error when handling a template, turn off the check:
-  ```nix
-  home-manager.users.sencho.programs.zathura.extraConfig =
-    builtins.readFile (config.scheme {
-      check-parsed-config-yaml = false;
-      templateRepo = inputs.base16-zathura; target = "recolor";
-    });
-  ```
-- Enable IFD (but beware of a possible error described below):
-  If the problem is in the scheme YAML file, parse it with `config.lib.base16.yaml2attrs-ifd` first:
-  ```nix
-  config.scheme = config.lib.base16.yaml2attrs-ifd "${inputs.base16-schemes}/nord.yaml";
-  ```
-  If the problem is in the template `templates/config.yaml` file, turn on `use-ifd`:
-  ```nix
-  home-manager.users.sencho.programs.zathura.extraConfig =
-    builtins.readFile (config.scheme {
-      use-ifd = true;
-      templateRepo = inputs.base16-zathura; target = "recolor";
-    });
-  ```
-- Submit an issue.
-- Fix the YAML upstream. Probable causes: trailing spaces, file structure differs from typical `config.yaml` / scheme YAML files.
-- Fix the Nix parser 😈.
+The check that produces this error happens by default for templates by installing a special derivation. You can do it for scheme too by adding the `config.scheme.check` derivation to your NixOS / home-manager package list. 
 
 </blockquote></details>
 
 <details><summary>Error on `nix flake check` or `nix flake show`</summary><blockquote>
 
 First, check that you have the most recent version of `base16.nix`.
-If updating doesn't help, check that you don't turn on `use-ifd` in any of the scheme calls (template instantiations)
-and that you don't invoke `yaml2attrs-ifd` function.
+If the error persists, check that you don't turn on `use-ifd` in any of the calls to a scheme (template instantiations) or to the `yaml2attrs` function.
 
 Relevant issue: #3.
 
-If neither of the above listed solutions do not work for you, please reopen it.
+If neither of the above listed solutions do not work for you, please open an issue.
 </blockquote></details>
 
 Anyhow, feel free to open an issue!

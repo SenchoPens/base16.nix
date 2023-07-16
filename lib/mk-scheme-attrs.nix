@@ -74,7 +74,6 @@ let
         } // allOther-patch;
       in new-scheme // patch;
 
-
   #-------------------#
   # RETURNED FUNCTION #
   #-------------------#
