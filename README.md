@@ -304,11 +304,11 @@ The most probable reason of such an error is incorrectly parsed YAML file of eit
 ### Fix incorrectly parsed YAML file
 
 - Enable IFD (but beware of a possible error described below):
-  If the problem is in the scheme YAML file, parse it with `config.lib.base16.yaml2attrs` first as such:
+  If the problem is in the scheme YAML file, set the scheme as such:
   ```nix
-  config.scheme = config.lib.base16.yaml2attrs {
+  config.scheme =  {
     yaml = "${inputs.base16-schemes}/nord.yaml";
-    use-ifd = "always";
+    use-ifd = "auto";  # to suppress errors, set to "always"
   };
   ```
   If the problem is in the template `templates/config.yaml` file, turn on `use-ifd`:
@@ -350,14 +350,14 @@ error: builder for '/nix/store/snbbfb43qphzfl6xr1mjs0mr8jny66x9-base16-nix-parse
        > Error: /nix/store/qhdqwj0mfp8qn0gq5s95pgd2i57lb09c-source/base16-kandinsky.yaml was parsed incorrectly during nix evaluation.
        > Please consult https://github.com/SenchoPens/base16.nix/tree/main#%EF%B8%8F-troubleshooting
 ```
-The check that produces this error happens by default for templates by installing a special derivation. You can do it for scheme too by adding the `config.scheme.check` derivation to your NixOS / home-manager package list. 
+The check that produces this error happens by default for templates by installing a special derivation. You can do it for scheme too by adding the `config.scheme.check` derivation to your NixOS / home-manager package list, though you might need to set the scheme to `{ yaml = ...; use-ifd = "auto"; }`. 
 
 </blockquote></details>
 
 <details><summary>Error on `nix flake check` or `nix flake show`</summary><blockquote>
 
 First, check that you have the most recent version of `base16.nix`.
-If the error persists, check that you don't turn on `use-ifd` in any of the calls to a scheme (template instantiations) or to the `yaml2attrs` function.
+If the error persists, check that you don't set `use-ifd` anywhere to `"auto"` or `"always"`.
 
 Relevant issue: #3.
 

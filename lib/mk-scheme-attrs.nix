@@ -4,12 +4,15 @@ let
   # HELPERS #
   #---------#
 
+  is-yaml2attrs-args = args: args ? "yaml";
+
   parse-scheme = yaml2attrs-args: {
-      slug = lib.removeSuffix ".yaml" (
-        builtins.baseNameOf (
-          builtins.unsafeDiscardStringContext "${yaml2attrs-args.yaml}"
-      )); 
-    } // (yaml2attrs yaml2attrs-args);
+    slug = lib.removeSuffix ".yaml" (
+      builtins.baseNameOf (
+        builtins.unsafeDiscardStringContext "${yaml2attrs-args.yaml}"
+    )); 
+    parsed-scheme = yaml2attrs yaml2attrs-args;
+  };
 
   /* Handles sum type input of the mkSchemeAttrs.
      Given an input which is either a file or an attrset,
@@ -17,16 +20,25 @@ let
   */
   yaml-scheme2attrs = scheme:
     let
-      parsed-scheme = parse-scheme { yaml = scheme; };
-      parsedInput =
+      is-y2a-args = is-yaml2attrs-args scheme;
+      yaml2attrs-args =
+        if is-y2a-args
+        then scheme
+        else { yaml = scheme; };
+      is-not-parsed = builtins.isAttrs scheme && !is-y2a-args;
+      inherit (parse-scheme yaml2attrs-args) parsed-scheme slug;
+      parsedInput' =
         let
-          unchecked = if builtins.isAttrs scheme then scheme else parsed-scheme;
+          unchecked = if is-not-parsed then scheme else parsed-scheme;
           checked = normalize-parsed-scheme msg.scheme-check-failed unchecked;
         in if checked.success then unchecked else throw msg.bad-mkSchemeAttrs-input;
       check =
-        if !(builtins.isAttrs scheme)
-        then check-parsed-yaml scheme parsed-scheme
+        if !is-not-parsed && (is-y2a-args -> ((scheme.use-ifd or "never") != "always"))
+        then
+          let check-arg = if is-y2a-args then scheme.yaml else scheme;
+          in check-parsed-yaml check-arg parsed-scheme
         else pkgs.emptyDirectory;
+      parsedInput = if is-not-parsed then parsedInput' else { inherit slug; } // parsedInput';
     in { inherit check parsedInput; };
 
   input-meta = inputAttrs: rec {

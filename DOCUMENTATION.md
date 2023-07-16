@@ -14,14 +14,15 @@ Access it as:
 - `config.lib.base16` if using `base16.nix` as a NixOS module,
 - `pkgs.callPackage inputs.base16.lib {}` otherwise.
 
-It exports 2 functions:
+It exports 1 function:
 
 ### `mkSchemeAttrs`
 
 Given a [scheme](https://github.com/base16-project/home/blob/main/builder.md#schemes-repository),
 which is **either**
 - a path to a YAML file,
-- an attrset,
+- an attrset containing colors,
+- an argument attrset to `yaml2attrs`,
 which
 - MUST contain string attributes `baseXX`,
 - MAY contain string attributes `scheme`, `author`, `description`, `slug`,
@@ -57,12 +58,6 @@ Other cool stuff:
 Note: `∀ x . mkSchemeAttrs (mkSchemeAttrs x) == mkSchemeAttrs x`
 </blockquote></details>
 
-### `yaml2attrs`
-Given a path to a YAML file, converts its' contents to a Nix attrset in pure Nix.
-- On `use-ifd = "never"` (default), may fail on complex YAMLs.
-- On `use-ifd = "always"`, converts the file's contents to a Nix attrset using `yaml2json` package. Causes an [IFD](https://nixos.wiki/wiki/Import_From_Derivation). Isn't used by default, but can help if you're experiencing troubles with incorrectly parsed YAML files (see README Troubleshooting section for details).
-- On `use-ifd = "auto"`, causes an IFD if recognizes a complex YAML on which nix parser fails.
-
 ---
 
 The function below isn't exported, but it's what powers up the _scheme attrset_'s `__functor` attribute:
@@ -96,3 +91,11 @@ mkTheme = {
   # Whether to check if the config.yaml was parsed correctly.
   check-parsed-config-yaml ? true,
 }:
+```
+
+#### `yaml2attrs`
+
+Given a path to a YAML file, converts its' contents to a Nix attrset in pure Nix.
+- On `use-ifd = "never"` (default), may fail on complex YAMLs.
+- On `use-ifd = "always"`, converts the file's contents to a Nix attrset using `yaml2json` package. Causes an [IFD](https://nixos.wiki/wiki/Import_From_Derivation). Isn't used by default, but can help if you're experiencing troubles with incorrectly parsed YAML files (see README Troubleshooting section for details).
+- On `use-ifd = "auto"`, causes an IFD if recognizes a complex YAML on which nix parser fails.

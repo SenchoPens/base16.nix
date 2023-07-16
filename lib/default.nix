@@ -9,6 +9,5 @@ let
   mk-theme = import ./mk-theme.nix (_base-imports // util);
   mk-scheme-attrs = import ./mk-scheme-attrs.nix (_base-imports // util // colors // mk-theme);
 in {
-  inherit (util) yaml2attrs;
   inherit (mk-scheme-attrs) mkSchemeAttrs;
 }
