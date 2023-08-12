@@ -2,39 +2,27 @@
 
 ![demo](demo.gif)
 
-#### What's base16 and `base16.nix`?
+## Introduction
 
-- [base16](https://github.com/base16-project/base16) is a theming standard by
-  which hundreds of
-  [colorschemes](https://github.com/base16-project/base16-schemes)
-  and application configuration
-  [templates](https://github.com/base16-project/base16#template-repositories)
-  were made over the years.
-- `base16.nix` is a **NixOS** / **home-manager** module and a library that
-  makes using base16 / base24 schemes and templates as **simple** as
-  possible, while leaving the user full **flexibility**.
+[base16](https://github.com/base16-project/base16) is a colorscheme framework with
+hundreds of
+[colorschemes](https://github.com/base16-project/base16-schemes)
+and application configuration
+[templates](https://github.com/base16-project/base16#template-repositories).
+
+`base16.nix` combines the expressiveness of Nix with the abundance of base16 to help you theme your setup.
 
 ### Features
 
 With `base16.nix`, you can:
-- use existing schemes, override them, write a new one in YAML / nix;
-- theme any application with a base16 template in minimal amount of key strokes,
-  or write a new template in [mustache](https://mustache.github.io/) / nix.
+- load base16 schemes, override them or specify custom ones in YAML / nix, to use across the configuration;
+- theme applications with existing or custom base16 templates.
 
-### Nonfeatures
+Note that `base16.nix` is a simple theming interface, **not** an all-batteries-included ricing engine — but if you want one, check out [Stylix](https://github.com/danth/stylix), which, among other things, complements `base16.nix` functionality with pre-defined configuration for common application.
 
-- `base16.nix` is simply a <sub>ultrasupermega convenient</sub> <sup>battle-tested</sup>
-  nix-y base16 standard implementation, **not a** _ricing_ engine — but if you want one,
-  please check out every r/unixporn admin's dream — [Stylix](https://github.com/danth/stylix)! built with `base16.nix`!
-- `base16.nix` neither aggregates nor vendors schemes / templates to **keep data and logic separated**.
-- No support for legacy template formats like
-  [Embedded Ruby](https://github.com/ntpeters/base16-template-converter)
-  and [EJS](https://github.com/base16-builder/base16-builder/issues/174).
+## 👀 Tutorial by Example
 
-
-## 👀 Module example (covers majority of use-cases)
-
-In this example, we will use `base16.nix` as a NixOS module to theme
+In this tutorial, we will use `base16.nix` as a NixOS module to theme
 `zathura`, `neovim` and `alacritty` to use the `nord` scheme
 (home-manager module works the same way).
 
@@ -371,13 +359,29 @@ Anyhow, feel free to open an issue!
 Thanks to:
 - @balsoft for [nixos-config](https://code.balsoft.ru/balsoft/nixos-config),
   which inspired this library;
+- @pinpox for [this post](https://pablo.tools/blog/computers/nix-mustache-templates/),
+  which I used to implement the mustache template instantiation;
 - @DavHau for [fromYaml](https://github.com/DavHau/fromYaml);
 - @cab404 for [Genix7000 — icon generator for nix projects](https://github.com/cab404/genix7000);
-- @chriskempson for creating base16
-  and @belak and base16-project team for maintaining it;
+- @chriskempson for base16;
+- @belak and [tinted-theming](https://github.com/tinted-theming/)
+  for growing the base16 ecosystem;
 - @mmanchkin for being a great support and **mastermind** behind all of this.
 
 
 ## 👩‍💻 Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md)
+Contributions are highly welcome, but please keep in mind I want to keep the code compact.
+
+### Testing
+To test the module, you can do the following:
+1. Set the flake url to the fork's absolute path: `base16.url = "/home/sencho/github.com/SenchoPens/base16.nix";`.
+2. Build the configuration:
+
+```sh
+nix flake lock --update-input base16
+nixos-rebuild build --flake . --fast  # NixOS
+home-manager build --flake . --no-out-link  # home-manager
+```
+
+Note that you don't have to commit the changes to test them.
