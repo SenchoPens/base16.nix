@@ -66,6 +66,8 @@ let
       # Taken from https://pablo.tools/blog/computers/nix-mustache-templates/
       themeDerivation = pkgs.stdenv.mkDerivation {
         name = "${builtins.unsafeDiscardStringContext scheme.scheme-slug}";
+        allowSubstitutes = false;
+        preferLocalBuild = true;
         nativeBuildInputs = [ pkgs.mustache-go ]
           ++ lib.optional check-parsed-config-yaml' (check-parsed-yaml config-yaml parsed-config);
         # Pass JSON as file to avoid escaping

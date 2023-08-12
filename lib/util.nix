@@ -28,6 +28,8 @@ let
   */
   yaml2json = yaml: pkgs.stdenv.mkDerivation {
     name = "fromYAML";
+    allowSubstitutes = false;
+    preferLocalBuild = true;
     phases = [ "buildPhase" ];
     buildPhase = "${pkgs.yaml2json}/bin/yaml2json < ${yaml} > $out";
   };
@@ -86,6 +88,8 @@ let
   in pkgs.stdenv.mkDerivation {
     name = "base16-nix-parse-check";
     nativeCheckInputs = [ pkgs.diffutils pkgs.jd-diff-patch ];
+    allowSubstitutes = false;
+    preferLocalBuild = true;
     doCheck = true;
     phases = [ "checkPhase" "installPhase" ];
     checkPhase = ''
