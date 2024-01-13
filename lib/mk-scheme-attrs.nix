@@ -1,4 +1,4 @@
-{ lib, pkgs, msg, mkTheme, yaml2attrs, check-parsed-yaml, normalize-parsed-scheme, writeTextFile', colors, mkBase24, ... }:
+{ lib, pkgs, msg, mkTheme, yaml2attrs, check-parsed-yaml, normalize-colors, writeTextFile', colors, mkBase24, convert-scheme-to-common-format, ... }:
 let
   #---------#
   # HELPERS #
@@ -11,7 +11,7 @@ let
       builtins.baseNameOf (
         builtins.unsafeDiscardStringContext "${yaml2attrs-args.yaml}"
     )); 
-    parsed-scheme = yaml2attrs yaml2attrs-args;
+    scheme = yaml2attrs yaml2attrs-args;
   };
 
   /* Handles sum type input of the mkSchemeAttrs.
@@ -26,25 +26,32 @@ let
         then scheme
         else { yaml = scheme; };
       is-not-parsed = builtins.isAttrs scheme && !is-y2a-args;
-      inherit (parse-scheme yaml2attrs-args) parsed-scheme slug;
+      parsed = parse-scheme yaml2attrs-args;
       parsedInput' =
         let
-          unchecked = if is-not-parsed then scheme else parsed-scheme;
-          checked = normalize-parsed-scheme msg.scheme-check-failed unchecked;
-        in if checked.success then unchecked else throw msg.bad-mkSchemeAttrs-input;
+          raw = if is-not-parsed then scheme else parsed.scheme;
+          unchecked = convert-scheme-to-common-format raw;
+          checked = normalize-colors msg.scheme-check-failed unchecked;
+        in if checked.success then unchecked else throw ''
+          ${msg.bad-mkSchemeAttrs-input}
+          builtins.toJSON of the parse result:
+          ${builtins.toJSON unchecked}
+        '';
       check =
         if !is-not-parsed && (is-y2a-args -> ((scheme.use-ifd or "never") != "always"))
         then
           let check-arg = if is-y2a-args then scheme.yaml else scheme;
-          in check-parsed-yaml check-arg parsed-scheme
+          in check-parsed-yaml check-arg parsed.scheme
         else pkgs.emptyDirectory;
-      parsedInput = if is-not-parsed then parsedInput' else { inherit slug; } // parsedInput';
+      parsedInput = if is-not-parsed then parsedInput' else { inherit (parsed) slug; } // parsedInput';
     in { inherit check parsedInput; };
 
   input-meta = inputAttrs: rec {
     scheme = ''${inputAttrs.scheme or "untitled"}'';
     author = ''${inputAttrs.author or "untitled"}'';
     description = ''${inputAttrs.description or scheme}'';
+    variant = ''${inputAttrs.variant or "unspecified"}'';
+    system = ''${inputAttrs.system or "base16"}'';
     slug =
       lib.toLower (
         lib.strings.sanitizeDerivationName (
@@ -57,6 +64,9 @@ let
     scheme-author = inputMeta.author;
     scheme-description = inputMeta.description;
     scheme-slug = inputMeta.slug;
+    scheme-slug-underscored = builtins.replaceStrings ["-"] ["_"] inputMeta.slug;
+    scheme-system = inputMeta.system;
+    scheme-variant = inputMeta.variant;
   };
 
   coercion-meta = inputAttrs: inputMeta: {

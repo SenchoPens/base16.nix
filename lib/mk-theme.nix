@@ -1,4 +1,4 @@
-{ lib, pkgs, msg, success-monad, yaml2attrs, writeTextFile', writeTextFile'', check-parsed-yaml, ... }:
+{ lib, pkgs, msg, success-monad, yaml2attrs, writeTextFile', writeTextFile'', check-parsed-yaml, sm-or, ... }:
 let
   /* Builds a theme file from a scheme and a template and returns its path.
      If you do not supply `templateRepo`, then
@@ -40,10 +40,22 @@ let
           safe-accessor = name: {
             f = value: { success = value?${name}; value = value.${name}; };
           };
+          get-new-format-ext = {
+            f = value: {
+              success = value ? "filename";
+              value = if lib.hasInfix "." value.filename
+                then ''.${lib.last (lib.splitString "." value.filename)}''
+                else "";
+            };
+          };
           ext-must-be-string = {
             f = extension: { success = builtins.isString extension; value = extension; };
           };
-        in success-monad parsed (safe-accessor target) (safe-accessor "extension") ext-must-be-string;
+        in success-monad parsed (safe-accessor target)
+          (sm-or
+            (safe-accessor "extension")
+            get-new-format-ext
+          ) ext-must-be-string;
       parsed-config = yaml2attrs { yaml = config-yaml; inherit use-ifd; check = get-extension; };
       ext =
         if extension != null then extension

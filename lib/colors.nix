@@ -1,4 +1,4 @@
-{ lib, normalize-parsed-scheme, ... }:
+{ lib, normalize-colors, ... }:
 let
   /* Converts 2 digit hex to decimal number.
 
@@ -54,8 +54,8 @@ let
   */
   colors = scheme:
     let
-      # normalize-parsed-scheme will already be checked or is not in danger anyhow
-      base = (normalize-parsed-scheme "" scheme).value;
+      # normalize-colors will already be checked or is not in danger anyhow
+      base = (normalize-colors "" scheme).value;
       # define local helper functions:
       splitRGB = hex: {
         r = builtins.substring 0 2 hex;

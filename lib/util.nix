@@ -15,6 +15,14 @@ let
       };
     in value: res { success = true; inherit value; };
 
+  sm-or = e1': e2': {
+    f = value:
+      let
+        e1 = e1'.f value;
+        e2 = e2'.f value;
+      in if e1.success then e1 else e2;
+  };
+
   /* Writes a text to file so that the name of the file is short (without hash)
      and with the correct extension.
   */
@@ -34,14 +42,21 @@ let
     buildPhase = "${pkgs.yaml2json}/bin/yaml2json < ${yaml} > $out";
   };
 
-  /* Normalizes a parsed scheme attrset:
+  /* Converts tinted-theming >=0.11 format to the old one
+  */
+  convert-scheme-to-common-format = raw:
+    (raw.palette or {})
+    // { scheme = raw.name or "untitled"; } 
+    // (removeAttrs raw [ "palette" ]);
+
+  /* Normalizes a scheme attrset's colors:
      - filters color fields from the scheme,
      - trims the optional prefix hashtag,
      - lowers the values.
   */
-  normalize-parsed-scheme = err-msg: parsed:
+  normalize-colors = err-msg: raw:
     let
-      baseXXs = lib.filterAttrs (name: _: lib.hasPrefix "base" name && builtins.stringLength name == 6) parsed;
+      baseXXs = lib.filterAttrs (name: _: lib.hasPrefix "base" name && builtins.stringLength name == 6) raw;
       check-color = color: builtins.isString color && builtins.stringLength (lib.removePrefix "#" color) == 6;
     in success-monad baseXXs {
       f = baseXXs:
@@ -65,7 +80,7 @@ let
     use-ifd ? "never",
     # if use-ifd == "auto", the function to decide whether the YAML was parsed correctly without the IFD.
     # The default checks as if we are trying to parse a scheme.
-    check ? (normalize-parsed-scheme msg.scheme-check-failed),
+    check ? (raw: normalize-colors msg.scheme-check-failed (convert-scheme-to-common-format raw)),
   }:
     let
       without-ifd = fromYaml (builtins.readFile yaml);
@@ -110,4 +125,4 @@ let
       mkdir $out
     '';
   };
-in { inherit success-monad writeTextFile' writeTextFile'' yaml2json yaml2attrs check-parsed-yaml normalize-parsed-scheme; }
+in { inherit success-monad sm-or writeTextFile' writeTextFile'' yaml2json yaml2attrs check-parsed-yaml convert-scheme-to-common-format normalize-colors; }
