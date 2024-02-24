@@ -38,7 +38,8 @@ let
 
      For convenience, attributes of the form `baseXX` are provided, which are equal to
      `baseXX-hex`, along with a `toList` attribute, which is equal to `[ base00 ... base0F ]`
-     (mainly for config.console.colors).  Also, mnemonic color names for base08-base0F are provided:
+     (mainly for config.console.colors).  Also, mnemonic color names for base08-base0F and 
+     base12-base17 are provided:
      ```
       mnemonic = {
         red = base08;
@@ -49,6 +50,12 @@ let
         blue = base0D;
         magenta = base0E;
         brown = base0F;
+        bright-red = base12 or base08;
+        bright-orange = base13 or base09;
+        bright-green = base14 or base0B;
+        bright-cyan = base15 or base0C;
+        bright-blue = base16 or base0D;
+        bright-magenta = base17 or base0E;
       };
       ```
   */
@@ -91,6 +98,12 @@ let
         blue = base0D;
         magenta = base0E;
         brown = base0F;
+        bright-red = base-short.base12 or base08;
+        bright-orange = base-short.base13 or base09;
+        bright-green = base-short.base14 or base0B;
+        bright-cyan = base-short.base15 or base0C;
+        bright-blue = base-short.base16 or base0D;
+        bright-magenta = base-short.base17 or base0E;
       };
 
       base-hex-bgr = lib.mapAttrs' (k: v:
