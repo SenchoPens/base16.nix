@@ -26,7 +26,7 @@ let
     base10 = scheme.base10 or scheme.base00;
     base11 = scheme.base11 or scheme.base00;
     base12 = scheme.base12 or scheme.base08;
-    base13 = scheme.base13 or scheme.base0A;
+    base13 = scheme.base13 or scheme.base09;
     base14 = scheme.base14 or scheme.base0B;
     base15 = scheme.base15 or scheme.base0C;
     base16 = scheme.base16 or scheme.base0D;
