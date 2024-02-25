@@ -33,7 +33,7 @@ returns a _scheme attrset_ with a ton of convenient color attributes:
 - every attribute from [the base16 standard](https://github.com/base16-project/base16/blob/main/builder.md#template-variables),
 - attributes `baseXX = baseXX-hex`, e.g. `base00 = "000000"`;
 - `toList = [ base00 ... base0F ]`, for use in e.g. `config.console.colors`,
-- mnemonic color names for `base08` — `base0F`:
+- mnemonic color names for `base08` — `base0F` and `base12` — `base17`:
   ```nix
   mnemonic = {
     red = base08;
@@ -44,6 +44,12 @@ returns a _scheme attrset_ with a ton of convenient color attributes:
     blue = base0D;
     magenta = base0E;
     brown = base0F;
+    bright-red = base12 or base08;
+    bright-orange = base13 or base09;
+    bright-green = base14 or base0B;
+    bright-cyan = base15 or base0C;
+    bright-blue = base16 or base0D;
+    bright-magenta = base17 or base0E;
   };
   ```
 
