@@ -28,7 +28,7 @@ let
   */
   writeTextFile' = path: text: ''${pkgs.writeTextDir path text}/${path}'';
 
-  /* Same as writeTextFile', but escaped for use in the builder
+  /* Same as writeTextFile', but escaped for use in the builder.
   */
   writeTextFile'' = path: text: ''${pkgs.writeTextDir path text}/${lib.escapeShellArg path}'';
 
@@ -42,11 +42,24 @@ let
     buildPhase = "${pkgs.yaml2json}/bin/yaml2json < ${yaml} > $out";
   };
 
-  /* Converts tinted-theming >=0.11 format to the old one
+  /* Simplified tinted-theming 0.11 slugify.
+     From Misterio77/nix-colors
+  */
+  slugify = 
+    let
+      filterChars = f: str: lib.concatStrings (lib.filter f (lib.stringToCharacters str));
+      validChars = lib.stringToCharacters "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890-";
+      isValid = x: lib.elem x validChars;
+    in str: lib.toLower (filterChars isValid (lib.replaceStrings [" "] ["-"] str)); 
+
+  /* Converts tinted-theming 0.11 format to the old one
   */
   convert-scheme-to-common-format = raw:
     (raw.palette or {})
-    // { scheme = raw.name or "untitled"; } 
+    // {
+      scheme = raw.name or "untitled";
+      slug = raw.slug or (slugify raw.name);
+    } 
     // (removeAttrs raw [ "palette" ]);
 
   /* Normalizes a scheme attrset's colors:

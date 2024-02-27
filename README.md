@@ -4,19 +4,16 @@
 
 ## Introduction
 
-[base16](https://github.com/base16-project/base16) is a colorscheme framework with
-hundreds of
-[colorschemes](https://github.com/base16-project/base16-schemes)
-and application configuration
-[templates](https://github.com/base16-project/base16#template-repositories).
+[tinted-theming (continuation of base16)](https://github.com/tinted-theming/home) is a framework with
+hundreds of colorschemes and application configuration templates.
 
-`base16.nix` combines the expressiveness of Nix with the abundance of base16 to help you theme your setup.
+`base16.nix` combines the expressiveness of Nix with the abundance of tinted-theming to help you theme your setup.
 
 ### Features
 
 With `base16.nix`, you can:
-- load base16 schemes, override them or specify custom ones in YAML / nix, to use across the configuration;
-- theme applications with existing or custom base16 templates.
+- load base16 **and base24** schemes, override them or specify custom ones in YAML / nix, to use across the configuration;
+- theme applications with existing or custom templates.
 
 Note that `base16.nix` is a simple theming interface, **not** an all-batteries-included ricing engine — but if you want one, check out [Stylix](https://github.com/danth/stylix), which, among other things, complements `base16.nix` functionality with pre-defined configuration for common application.
 
@@ -37,8 +34,8 @@ In your NixOS configuration directory:
   # zathura and vim templates to the flake inputs.
   base16.url = "github:SenchoPens/base16.nix";
 
-  base16-schemes = {
-    url = "github:base16-project/base16-schemes";
+  tt-schemes = {
+    url = "github:tinted-theming/schemes";
     flake = false;
   };
 
@@ -48,7 +45,7 @@ In your NixOS configuration directory:
   };
 
   base16-vim = {
-    url = "github:base16-project/base16-vim";
+    url = "github:tinted-theming/base16-vim";
     flake = false;
   };
   ...
@@ -60,7 +57,7 @@ outputs = { self, ... } @ inputs {
         # import the base16.nix module
         base16.nixosModule
         # set system's scheme to nord by setting `config.scheme`
-        { scheme = "${inputs.base16-schemes}/nord.yaml"; }
+        { scheme = "${inputs.tt-schemes}/base16/nord.yaml"; }
         # import `theming.nix`, we will write it in the next, final, step
         ./theming.nix
         ...
@@ -137,7 +134,7 @@ Read the **Documentation** section to see how it works.
 <details><summary>Import a scheme from a YAML file</summary><blockquote>
 
 ```nix
-config.scheme = "${inputs.base16-schemes}/nord.yaml";
+config.scheme = "${inputs.tt-schemes}/base16/nord.yaml";
 ```
 </blockquote></details>
 
@@ -146,7 +143,7 @@ config.scheme = "${inputs.base16-schemes}/nord.yaml";
 We need to explicitly use `mkSchemeAttrs` function
 to use the `override` field of the resulting _scheme attrs_:
 ```nix
-config.scheme = (config.lib.base16.mkSchemeAttrs "${inputs.base16-schemes}/nord.yaml").override {
+config.scheme = (config.lib.base16.mkSchemeAttrs "${inputs.tt-schemes}/base16/nord.yaml").override {
   scheme = "Now it's my scheme >:]";
   base00 = "000000";  # make background completely black
 };
@@ -172,14 +169,14 @@ config.scheme = {
 Achieve this by theming without `config.scheme` — by calling `mkSchemeAttrs`:
 ```nix
 home-manager.users.sencho.programs.zathura.extraConfig =
-  builtins.readFile (config.lib.base16.mkSchemeAttrs inputs.base16-schemes inputs.base16-zathura);
+  builtins.readFile (config.lib.base16.mkSchemeAttrs inputs.tt-schemes inputs.base16-zathura);
 ```
 
 Without importing `base16.nix` as a module at all:
 
 ```nix
 home-manager.users.sencho.programs.zathura.extraConfig =
-  builtins.readFile ((pkgs.callPackage inputs.base16.lib {}).mkSchemeAttrs inputs.base16-schemes inputs.base16-zathura);
+  builtins.readFile ((pkgs.callPackage inputs.base16.lib {}).mkSchemeAttrs inputs.tt-schemes inputs.base16-zathura);
 ```
 
 </blockquote></details>
@@ -239,50 +236,6 @@ Consult the [DOCUMENTATION.md](DOCUMENTATION.md) to learn about every feature in
 detail and see how `base16.nix` works underhood.
 
 
-## 🤍 Repositories that use `base16.nix`
-
-NixOS modules:
-- [Stylix](https://github.com/danth/stylix) — System-wide colorscheming and typography for NixOS.
-- [tmux-flake](https://github.com/VTimofeenko/tmux-flake) — a flake that configures tmux.
-
-Configs by:
-- [pborzenkov](https://github.com/pborzenkov/nix-config)
-- [nryz](https://github.com/nryz/config)
-- [MoritzBoehme](https://github.com/MoritzBoehme/dotfiles)
-- [IllustratedMan-code](https://github.com/IllustratedMan-code/nixconfig)
-- [Lyndeno](https://github.com/Lyndeno/nix-config)
-
-Please feel free to list your repository above, it will make my day :)
-
-
-## 🎎 Alternatives
-
-- [base16-nix](https://github.com/atpotts/base16-nix) by @atpotts and its forks, notably
-[base16-nix](https://github.com/AlukardBF/base16-nix) by @AlukardBF and [base16-nix](https://github.com/lukebfox/base16-nix) by @lukebfox.
-- [nix-colors](https://git.sr.ht/~misterio/nix-colors) by @misterio.
-  Thanks for the competition spirit! :)) And for the nix-wallpaper function, with which the preview GIF was generated.
-  <details><summary>differences:</summary><blockquote>
-
-  Roughly nix-colors can be viewed as an alternative
-  to `base16.nix` + [Stylix](https://github.com/danth/stylix),
-  without the mustache template support:
-  
-  `base16.nix` supports the existing
-  [≥ 80 mustache templates](https://github.com/base16-project/base16/blob/main/README.md#official-templates),
-  nix-colors does not — instead there are
-  [≥ 4 contributed nix functions](https://github.com/Misterio77/nix-colors/tree/308fe8855ee4c35347baeaf182453396abdbe8df/lib/contrib)
-  and planned (at the time of writing) support for translation from mustache templates to nix functions.
-  Stylix has [≥ 10 Stylix theming nix functions](https://github.com/danth/stylix/tree/master/modules).
-
-  You can generate base16 scheme from a wallpaper — in nix-colors via
-  [flavours](https://github.com/Misterio77/flavours)
-  and in Stylix via home-made CIE-LAB colorspace Haskell genetic algorithm.
-
-  Also, if you use nix-colors without it's nix functions, it does not depend on nixpkgs.
-  </blockquote></details>
-- [theme-base16](https://gitlab.com/rycee/nur-expressions/-/tree/master/hm-modules/theme-base16) by @rycee.
-
-
 ## ☎️ Troubleshooting
 
 <details><summary>Error / incorrect behavior after updating base16.nix or adding a new source / template</summary><blockquote>
@@ -295,7 +248,7 @@ The most probable reason of such an error is incorrectly parsed YAML file of eit
   If the problem is in the scheme YAML file, set the scheme as such:
   ```nix
   config.scheme =  {
-    yaml = "${inputs.base16-schemes}/nord.yaml";
+    yaml = "${inputs.tt-schemes}/base16/nord.yaml";
     use-ifd = "auto";  # to suppress errors, set to "always"
   };
   ```
