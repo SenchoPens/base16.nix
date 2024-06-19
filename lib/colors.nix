@@ -1,25 +1,38 @@
 { lib, normalize-colors, ... }:
 let
-  inherit (builtins) getAttr;
-  compose = lib.flip lib.pipe;
-  base-digits = lib.stringToCharacters "0123456789abcdefghijklmnopqrstuvwxyz";
-  parseIntRadix =
-    base:
-    assert 2 <= base && base <= 36;
+  /*
+    Converts 2 digit hex to decimal number.
+
+    Example:
+      primaryHex2Dec "1a" = 26
+  */
+  primaryHex2Dec =
+    hex:
     let
-      digits' = compose [
-        (lib.take base)
-        (lib.imap0 (lib.flip lib.nameValuePair))
-        lib.listToAttrs
-      ] base-digits;
+      hex2decDigits = {
+        "0" = 0;
+        "1" = 1;
+        "2" = 2;
+        "3" = 3;
+        "4" = 4;
+        "5" = 5;
+        "6" = 6;
+        "7" = 7;
+        "8" = 8;
+        "9" = 9;
+        a = 10;
+        b = 11;
+        c = 12;
+        d = 13;
+        e = 14;
+        f = 15;
+      };
+      hex' = lib.toLower hex;
     in
-    compose [
-      lib.toLower
-      lib.stringToCharacters
-      (map (lib.flip getAttr digits'))
-      (lib.foldr (cur: acc: acc * base + cur) 0)
-    ];
-  toIntBase16 = parseIntRadix 16;
+    16 * hex2decDigits."${builtins.substring 0 1 hex'}"
+    + hex2decDigits."${builtins.substring 1 2 hex'}";
+
+  compose = lib.flip lib.pipe;
 
   /*
     Ensure Base24 colors are available
@@ -80,12 +93,6 @@ let
         g = builtins.substring 2 2 hex;
         b = builtins.substring 4 2 hex;
       };
-      inherit (builtins) listToAttrs attrValues;
-      uncurry = lib.foldl lib.id;
-      mapAttrValues = compose [
-        lib.const
-        lib.mapAttrs
-      ];
       _color =
         hex:
         lib.fix (self: {
@@ -96,8 +103,8 @@ let
             withHashtag = "#${self.hex}";
           };
           __toString = self: self.hex;
-          rgb = mapAttrValues toIntBase16 (splitRGB self.hex);
-          dec = mapAttrValues (x: x / 255.0) self.rgb;
+          rgb = lib.mapAttrs (_: primaryHex2Dec) (splitRGB self.hex);
+          dec = lib.mapAttrs (_: x: x / 255.0) self.rgb;
         });
 
       ansi-list =
@@ -146,37 +153,45 @@ let
         palette:
         let
           ansi' = ansi palette;
+          color-list = [
+            "red"
+            "green"
+            "orange"
+            "blue"
+            "magenta"
+            "cyan"
+          ];
+          # everything but first (black) and last (white) elements
+          ansi-list = compose [
+            lib.tail
+            lib.init
+          ];
         in
-        {
-          inherit (ansi'.dark)
+        builtins.listToAttrs (
+          lib.zipListsWith lib.nameValuePair (color-list ++ map (x: "bright-${x}") color-list) (
+            ansi-list ansi'.dark.toList ++ ansi-list ansi'.bright.toList
+          )
+        )
+        // {
+          inherit (ansi.dark)
             red
             green
-            cyan
             blue
             magenta
+            cyan
             ;
-          orange = ansi'.dark.yellow;
+          orange = ansi.dark.yellow;
+          bright-red = ansi.bright.red;
+          bright-green = ansi.bright.green;
+          bright-orange = ansi.bright.yellow;
+          bright-blue = ansi.bright.blue;
+          bright-magenta = ansi.bright.magenta;
+          bright-cyan = ansi.bright.cyan;
           yellow = palette.base0A;
           brown = palette.base0F;
-        }
-        // builtins.listToAttrs (
-          lib.zipListsWith lib.nameValuePair
-            (map (x: "bright-${x}") [
-              "red"
-              "green"
-              "orange"
-              "blue"
-              "magenta"
-              "cyan"
-            ])
-            (
-              lib.pipe ansi'.bright.toList [
-                lib.tail
-                lib.init
-              ]
-            )
-        );
+        };
 
+      # paths like `hex`, `rgb.r` etc.
       paths =
         [
           [ ]
@@ -209,52 +224,33 @@ let
         );
 
       base-colors = lib.mapAttrs (lib.const _color) base;
-      prepend = compose [
-        lib.singleton
-        lib.concat
-      ];
       # transforms a list of colors to a flat list expected by base16 templates
       based = lib.concatMapAttrs (
         name: value:
-        listToAttrs (
-          map (
-            p:
-            lib.pipe
-              [
-                (compose [
-                  (prepend name)
-                  (lib.concatStringsSep "-")
-                ])
-                (lib.flip lib.getAttrFromPath value)
-              ]
-              [
-                (map (lib.flip lib.id p))
-                (uncurry lib.nameValuePair)
-              ]
-          ) paths
+        builtins.listToAttrs (
+          lib.forEach paths (path: {
+            name = lib.concatStringsSep "-" ([ name ] ++ path);
+            value = lib.getAttrFromPath path value;
+          })
         )
       );
 
+      inherit (builtins) isList isAttrs;
+
       /*
-        Maps a value by function `f`, recurring whenever `cond` is `true` 
+        Maps a value by function `f`, recurring whenever `cond` is `true`
         and the value under question is either attrs or list.
       */
       mapRecursiveCond =
         cond: f:
-        let
-          inherit (builtins) isAttrs isList;
-        in
         lib.fix (
           self: val:
-          (
-            if isAttrs val && cond val then
-              mapAttrValues self
-            else if isList val && cond val then
-              map self
-            else
-              f
-          )
-            val
+          if isAttrs val && cond val then
+            lib.mapAttrs (_: self) val
+          else if isList val && cond val then
+            map self val
+          else
+            f val
         );
 
       extra =
@@ -262,19 +258,17 @@ let
         mnemonic palette
         // {
           ansi = ansi palette;
-          toList = attrValues palette;
+          toList = builtins.attrValues palette;
         };
       total = palette: based palette // extra palette;
       total' =
         palette:
-        mapRecursiveCond (x: lib.strings.isConvertibleWithToString x -> builtins.isList x) toString (
-          total palette
-        )
+        mapRecursiveCond (x: lib.strings.isConvertibleWithToString x -> isList x) toString (total palette)
         // {
           original = palette // extra palette;
         };
 
-      withHashtag = mapAttrValues (lib.flip lib.mergeAttrs { __toString = self: self.hex.withHashtag; });
+      withHashtag = lib.mapAttrs (_: x: x // { __toString = self: self.hex.withHashtag; });
     in
     total' base-colors // { withHashtag = total' (withHashtag base-colors); };
 in
