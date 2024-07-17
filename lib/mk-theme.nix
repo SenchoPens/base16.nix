@@ -35,7 +35,7 @@ let
         else
           null;
       check-parsed-config-yaml' = config-yaml != null && check-parsed-config-yaml && use-ifd != "always";
-      get-extension = parsed:
+      get-extension = target': parsed:
         let
           safe-accessor = name: {
             f = value: { success = value?${name}; value = value.${name}; };
@@ -51,18 +51,19 @@ let
           ext-must-be-string = {
             f = extension: { success = builtins.isString extension; value = extension; };
           };
-        in success-monad parsed (safe-accessor target)
+        in success-monad parsed (safe-accessor target')
           (sm-or
             (safe-accessor "extension")
             get-new-format-ext
           ) ext-must-be-string;
-      parsed-config = yaml2attrs { yaml = config-yaml; inherit use-ifd; check = get-extension; };
+      get-extension-check = parsed: get-extension (builtins.head (builtins.attrNames parsed)) parsed;
+      parsed-config = yaml2attrs { yaml = config-yaml; inherit use-ifd; check = get-extension-check; };
       ext =
         if extension != null then extension
         else if templateRepo == null then ""
-        else let checked-ext = get-extension parsed-config;
+        else let checked-ext = get-extension target parsed-config;
           in if checked-ext.success then checked-ext.value
-             else builtins.trace msg.config-check-failed "";
+             else builtins.trace (msg.config-check-failed target) "";
       themeFilename = "base16-${scheme.scheme-slug}${ext}";
       templatePath =
         let target' = lib.escapeShellArg "${target}.mustache"; in
