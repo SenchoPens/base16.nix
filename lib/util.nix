@@ -58,8 +58,8 @@ let
     (raw.palette or {})
     // {
       scheme = raw.name or "untitled";
-      slug = raw.slug or (slugify raw.name);
-    } 
+      slug = raw.slug or (slugify (raw.name or "untitled"));
+    }
     // (removeAttrs raw [ "palette" ]);
 
   /* Normalizes a scheme attrset's colors:
