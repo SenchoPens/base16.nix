@@ -76,9 +76,10 @@ let
         else
           writeTextFile'' "${target}.mustache" template  # escaped
         ;
+    in 
       # Taken from https://pablo.tools/blog/computers/nix-mustache-templates/
-      themeDerivation = pkgs.stdenv.mkDerivation {
-        name = "${builtins.unsafeDiscardStringContext scheme.scheme-slug}";
+      pkgs.stdenv.mkDerivation {
+        name = themeFilename;
         allowSubstitutes = false;
         preferLocalBuild = true;
         nativeBuildInputs = [ pkgs.mustache-go ]
@@ -93,9 +94,7 @@ let
           mustache "$jsonDataPath" ${templatePath} > theme
         '';
         installPhase = ''
-          mkdir $out
-          cp theme $out/${lib.escapeShellArg themeFilename}
+          cp theme $out
         '';
       };
-    in "${themeDerivation}/${themeFilename}";
 in { inherit mkTheme; }
