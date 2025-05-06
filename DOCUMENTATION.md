@@ -45,7 +45,7 @@ returns a _scheme attrset_ with a ton of convenient color attributes:
     magenta = base0E;
     brown = base0F;
     bright-red = base12 or base08;
-    bright-orange = base13 or base09;
+    bright-yellow = base13 or base0A;
     bright-green = base14 or base0B;
     bright-cyan = base15 or base0C;
     bright-blue = base16 or base0D;
