@@ -38,8 +38,10 @@ let
     name = "fromYAML";
     allowSubstitutes = false;
     preferLocalBuild = true;
-    phases = [ "buildPhase" ];
-    buildPhase = "${pkgs.yaml2json}/bin/yaml2json < ${yaml} > $out";
+    nativeBuildInputs = [ pkgs.yaml2json ];
+    buildCommand = ''
+      yaml2json < ${yaml} > $out
+    '';
   };
 
   /* Simplified tinted-theming 0.11 slugify.
