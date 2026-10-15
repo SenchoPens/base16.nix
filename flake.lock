@@ -16,9 +16,23 @@
         "type": "github"
       }
     },
+    "nixpkgs": {
+      "locked": {
+        "lastModified": 1791966044,
+        "narHash": "sha256-UwKRZKua8BOagYl0cou05BHtu7F6XV62FD2Hb+f0QYs=",
+        "rev": "319e4cebef10cbb636c6ea392137b52ad105336a",
+        "type": "tarball",
+        "url": "https://releases.nixos.org/nixpkgs/nixpkgs-26.11pre1092129.319e4cebef10/nixexprs.tar.zst"
+      },
+      "original": {
+        "id": "nixpkgs",
+        "type": "indirect"
+      }
+    },
     "root": {
       "inputs": {
-        "fromYaml": "fromYaml"
+        "fromYaml": "fromYaml",
+        "nixpkgs": "nixpkgs"
       }
     }
   },
