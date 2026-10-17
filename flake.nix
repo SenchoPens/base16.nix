@@ -8,18 +8,23 @@
     };
   };
 
-  outputs = { self, fromYaml, ... }:
+  outputs = { self, nixpkgs, fromYaml, ... }:
+    let
+      forAllSystems = f:
+        nixpkgs.lib.genAttrs [
+          "x86_64-linux"
+          "aarch64-linux"
+          "x86_64-darwin"
+          "aarch64-darwin"
+        ] (system: f nixpkgs.legacyPackages.${system});
+    in
     {
       lib = import ./lib fromYaml;
 
       nixosModule = import ./module.nix self;
 
       homeManagerModule = self.nixosModule;
-      #
-      # devShell = pkgs.mkShell rec {
-      #   nativeBuildInputs = with pkgs; [
-      #     nixfmt
-      #   ];
-      # };
+
+      formatter = forAllSystems (pkgs: pkgs.nixfmt-tree);
     };
 }
